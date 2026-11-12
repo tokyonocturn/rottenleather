@@ -36,14 +36,15 @@ class Rcon:
         return self._recv().decode("utf-8", "replace").strip()
 
 
-def connect(port, password, attempts=40):
+def connect(port, password, attempts=3):
+    """Connect quickly; probes call this for every observation, so a dead server must not stall."""
     last = None
     for _ in range(attempts):
         try:
-            return Rcon("127.0.0.1", port, password)
+            return Rcon("127.0.0.1", port, password, timeout=10)
         except Exception as exc:  # server still starting
             last = exc
-            time.sleep(1)
+            time.sleep(0.3)
     raise SystemExit("rcon connect failed: %s" % last)
 
 

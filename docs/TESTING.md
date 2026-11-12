@@ -21,53 +21,83 @@ against that exact Minecraft/Forge version. It verifies the generated adapter co
 real API surface of that release (item registry, stack count, chat component, furnace field API) and
 that defaults come from the spec.
 
-## 3. Forge runtime probe
+## 3. Forge runtime probe (one scenario per fresh server)
 
 ```bash
-bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 25571 25581
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 default
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 custom
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 vanilla
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 reload
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 skip
+bash tools/probe-forge.sh 1.12.2 1.12.2-14.23.5.2847 replace
 ```
 
-Boots a real Forge dedicated server from the built jar and asserts, through RCON:
+Each command boots the built jar on a **fresh JVM, fresh world and fresh config**, runs exactly one
+scenario, and exits. Nothing is shared between scenarios, so a passing run proves that scenario on
+its own and cannot be explained by state left behind by an earlier one.
 
-1. **Default recipe + hopper automation** — chest → hopper → furnace → hopper → chest produces
-   exactly 1 leather; `/rottenleather status` reports `registered=true`, `runtimeXp=0.1` and the spec
-   fingerprint.
-2. **Custom shape** — `outputCount=3`, `experience=0.35`, `smeltTimeTicks=60`: nothing reaches the
-   output chest after 2 s, 3 leather arrive by 5 s.
-3. **Timing isolation** — a beef furnace in the same world has not finished at 5 s and has finished
-   by 14 s, i.e. other recipes keep vanilla 200-tick timing while this recipe uses 60.
-4. **`conflictPolicy=skip`** — with `inputItem=porkchop`, the vanilla porkchop→cooked_porkchop recipe
-   survives and `/rottenleather reload` reports `install=KEEP_EXISTING`.
-5. **`conflictPolicy=replace`** — the same input now produces leather, proving the vanilla entry was
-   displaced.
-6. **Restore** — switching back to `skip` and reloading makes porkchop→cooked_porkchop work again.
-7. **Log hygiene** — no reflection/classloading errors, no stack trace from this mod, and no
-   “cook-time adjustment failed” warning.
+What every run does:
 
-Output is read from chests with `/testforblock`, because `/blockdata` cannot read NBT before 1.13.
-Each furnace feeds a hopper into a chest that contains only the expected stack, so the assertion is
-exact.
+* picks two free ports by binding them, writes `server.properties` with them, and refuses to continue
+  unless the booted server's own console contains `RCON running on ...:<rcon port>` — a stale server
+  on a fixed port used to answer RCON and made the probe test the wrong instance;
+* deletes `world/`, `world_nether/`, `world_the_end/` and aborts if a stale server still holds them;
+* copies the built jar into `mods/` and verifies the copy byte-for-byte (`cmp`) so a locked, older
+  jar can never be silently tested instead of the new build;
+* reads `/rottenleather status` and checks that the running recipe's **fingerprint equals the
+  fingerprint computed from the config file the probe just wrote** (for `default` it also equals the
+  generated `BuildDefaults.SPEC_FINGERPRINT`, which catches stale code generation);
+* moves the world spawn onto the probe area (`/setworldspawn 2 4 2`) so the server keeps those chunks
+  loaded while no player is online;
+* builds `chest → hopper → furnace (1 coal) → hopper → chest` and waits on observable state only:
+  the furnace block becomes `lit_furnace`, the output chest matches the expected stack with
+  `/testforblock`, and the coal, input stack and output stack disappear from their slots.
 
-## 4. Bukkit runtime probe
+Cook time is measured in **server ticks** with `/time query gametime` between "furnace is lit" and
+"output reached the chest", so machine load cannot turn a correct smelt into a failure:
+
+| Scenario | Expected |
+| --- | --- |
+| `default` | 1 leather, 150–420 ticks (vanilla 200; the window starts at 150 ticks to absorb the state-poll latency of the first lit-furnace observation), `registered=true`, `runtimeXp=0.1` |
+| `custom` | 3 leather, 30–150 ticks when `customCookTime=true`, `runtimeXp=0.35`; where the version cannot adjust cook time, the console must contain the documented `fixed at 200 ticks` warning and the smelt must take 150–420 ticks |
+| `vanilla` | with `outputCount=3, ticks=60` configured, beef → 1 cooked beef in 150–420 ticks and the chest must not contain leather, proving other recipes keep vanilla timing |
+| `reload` | boot at defaults, rewrite the config and `/rottenleather reload`: the status fingerprint, `ticks=80`, `runtimeXp=0.35` and `registered=true` must all update, then the smelt must use the reloaded timing. Forge reloads to 3/0.35/80 and smelts 3 leather; Bukkit reloads to 1/0.35/80 (the 1.8-1.12.2 API cannot re-register a recipe, so a count change needs a restart) and smelts 1 leather |
+| `skip` | beef → leather with `skip`: `install=KEEP_EXISTING`, `registered=false`, the furnace produces vanilla cooked beef and the chest never contains leather |
+| `replace` | beef → leather with `replace`: on 1.9+ `registered=true` and the furnace produces leather; on 1.8.x the console must contain `replace is not available on MC` and vanilla cooked beef must still be produced |
+
+A run fails on any mod stack trace, reflection/classloading error (`NoSuchField`, `NoClassDefFound`,
+…), or `cook-time adjustment failed` warning in the server console.
+
+## 4. Bukkit / Paper runtime probe
 
 ```bash
-bash tools/probe-bukkit.sh 1.12.2 25671 25681
+bash tools/probe-bukkit.sh 1.12.2 default
+bash tools/probe-bukkit.sh 1.12.2 custom
+bash tools/probe-bukkit.sh 1.12.2 vanilla
+bash tools/probe-bukkit.sh 1.12.2 reload
+bash tools/probe-bukkit.sh 1.12.2 skip
 ```
 
-Boots a real Paper server (1.8.8–1.12.2) with the built plugin and asserts:
+Same design and assertions as the Forge probe, with the platform's own records:
+`registered=`, `nmsXp=`, `customCookTime=`, `install=` and the same fingerprint check. The plugin is
+installed into `plugins/` with the same byte-for-byte verification. `replace` is not probed because
+the 1.8–1.12.2 Bukkit API cannot remove a recipe; the plugin logs that limitation instead of
+pretending to support it.
 
-1. default recipe, `nmsXp=0.1`, fingerprint, and hopper automation;
-2. `outputCount=3`, `experience=0.35`, `smeltTimeTicks=60`: 3 leather by 5 s, not present at 2 s;
-3. a beef furnace keeps vanilla timing (empty at 5 s, done by 14 s);
-4. live `/rottenleather reload` applies `experience=0.25`, `smelt-time-ticks=80` to new smelts;
-5. `input-item=porkchop` with `skip` preserves the vanilla porkchop recipe;
-6. the NMS bridges report available (no “cook-time API not available” / “recipe experience API not
-   available”), and no stack trace from the plugin appears.
+## 5. Whole matrix
 
-`conflict-policy: replace` is not tested because the 1.8–1.12.2 Bukkit API cannot remove a recipe;
-the plugin reports that limitation instead.
+```bash
+bash tools/run-matrix.sh forge    # 11 versions x 6 scenarios
+bash tools/run-matrix.sh bukkit   # 6 Paper versions x 5 scenarios
+bash tools/run-matrix.sh all
+```
 
-## 5. Proxy load test
+Runs sequentially, one fresh server per scenario, and appends
+`<platform> <mc> <scenario> PASS|FAIL` to `logs/MATRIX.txt`. A failure does not stop the sweep, so the
+matrix records every result. `tools/matrix.py` then regenerates
+[`COMPATIBILITY.md`](COMPATIBILITY.md) from those logs.
+
+## 6. Proxy load test
 
 ```bash
 bash tools/probe-proxies.sh
@@ -77,19 +107,26 @@ Starts the real BungeeCord jar and the real Velocity jar with the shipped module
 proxy to finish booting, and asserts each module logs its enable line. Proxies have no world, so this
 proves loading, channel and command registration — not smelting.
 
-## 6. What is not covered
+## 7. What is not covered
 
-* No automated GUI/client test: the probes are headless servers, so the visual furnace progress
-  bar and the player-facing XP orb amount are not asserted.
+* No automated client test: the servers are headless, so the visual furnace progress bar and the
+  exact XP orb amount a player picks up are not asserted. XP is checked through the platform's own
+  smelting record, which is what both Forge and CraftBukkit read when a player takes the output.
 * No Bedrock client test: Geyser translation is documented, not exercised.
 * Proxy reporting end-to-end needs a connected player; only module loading is automated.
-* Versions without a probe run are not listed as supported in
+* Spigot is not claimed. Only Paper jars were available on the build machine; Paper is a Spigot fork
+  using the same Bukkit API and CraftBukkit package layout, but a Paper pass is not reported as a
+  Spigot pass.
+* Versions without a passing run are not listed as supported in
   [`COMPATIBILITY.md`](COMPATIBILITY.md), even if they build.
 
 ## Evidence
 
-Probe output is written to `logs/`:
+Every probe writes its own log, and the matrix is derived from those files, not from memory:
 
-* `logs/probe-forge-<mc>.log` and `logs/probe-forge-<mc>/` (status lines, failing checks, console)
-* `logs/probe-bukkit-<mc>.log` and `logs/probe-bukkit-<mc>/`
+* `logs/probe-forge-<mc>-<scenario>.log` — one file per Forge version and scenario
+* `logs/probe-bukkit-<mc>-<scenario>.log` — one file per Paper version and scenario
+* `logs/probe-forge-<mc>/status-<scenario>.txt`, `reload-<scenario>.txt` — raw command responses
+* `logs/MATRIX.txt` — the PASS/FAIL summary used to generate the compatibility matrix
+* `logs/build-forge-matrix.log` — per-version `CORE_SUITE` and `FORGE_SUITE` results
 * `logs/probe-proxies.log`, `logs/bungee-console.log`, `logs/velocity-console.log`

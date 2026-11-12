@@ -46,13 +46,13 @@ BUNGEE_CP="$(ls libs/proxy/bungee-libs/*.jar | tr '\n' ';')"
     -d "$ROOT/build/bungee" \
     $(find "$ROOT/shared/src/main/java" "$ROOT/proxy/bungee/src/main/java" -name '*.java')
 cp -r "$ROOT/proxy/bungee/src/main/resources/." "$ROOT/build/bungee/"
-"$JAR" cf "$DIST/rottenleather-bungee-1.0.0.jar" -C "$ROOT/build/bungee" .
+"$JAR" cf "$DIST/rottenleather-bungee-1.0.1.jar" -C "$ROOT/build/bungee" .
 
 echo "building Velocity module"
 "$JAVAC" --release 11 -encoding UTF-8 -Xlint:-options -classpath "libs/proxy/velocity.jar" \
     -d "$ROOT/build/velocity" \
     $(find "$ROOT/shared/src/main/java" "$ROOT/proxy/velocity/src/main/java" -name '*.java')
 cp -r "$ROOT/proxy/velocity/src/main/resources/." "$ROOT/build/velocity/"
-"$JAR" cf "$DIST/rottenleather-velocity-1.0.0.jar" -C "$ROOT/build/velocity" .
+"$JAR" cf "$DIST/rottenleather-velocity-1.0.1.jar" -C "$ROOT/build/velocity" .
 
-ls -la "$DIST"/rottenleather-bungee-1.0.0.jar "$DIST"/rottenleather-velocity-1.0.0.jar
+ls -la "$DIST"/rottenleather-bungee-1.0.1.jar "$DIST"/rottenleather-velocity-1.0.1.jar

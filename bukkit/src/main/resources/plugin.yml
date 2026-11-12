@@ -1,6 +1,6 @@
 name: RottenFleshToLeather
 main: com.rottenleather.bukkit.RottenLeatherPlugin
-version: 1.0.0
+version: 1.0.1
 description: Smelt rotten flesh into leather in a vanilla furnace.
 author: rottenleather
 website: https://github.com/tokyonocturn/rottenleather

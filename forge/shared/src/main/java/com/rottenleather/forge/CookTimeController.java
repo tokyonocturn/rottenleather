@@ -36,12 +36,7 @@ public final class CookTimeController {
         }
         RecipeSpec spec = RottenLeatherMod.spec();
         if (!VersionAdapterImpl.SUPPORTS_CUSTOM_COOK_TIME) {
-            if (spec != null && !spec.isVanillaSmeltTime() && !fixedTimeLogged) {
-                fixedTimeLogged = true;
-                LOG.warn("Rotten Flesh to Leather: this Minecraft version's furnace is fixed at 200 "
-                        + "ticks, so smeltTimeTicks={} cannot be applied; smelting uses vanilla timing",
-                        spec.smeltTimeTicks());
-            }
+            warnIfTimeUnsupported();
             return;
         }
         if (spec == null || spec.isVanillaSmeltTime() || !RottenLeatherMod.config().adjustCookTime()) {
@@ -70,6 +65,25 @@ public final class CookTimeController {
                         + "vanilla timing", t);
             }
         }
+    }
+
+    /**
+     * Logs the documented limitation when this Minecraft version cannot honour a non-vanilla cook
+     * time. Called at config load and reload as well as from the world tick, because 1.8.x fires the
+     * world tick event through a different bus and a warning that only appears there can be missed.
+     */
+    public static void warnIfTimeUnsupported() {
+        if (VersionAdapterImpl.SUPPORTS_CUSTOM_COOK_TIME || fixedTimeLogged) {
+            return;
+        }
+        RecipeSpec spec = RottenLeatherMod.spec();
+        if (spec == null || spec.isVanillaSmeltTime()) {
+            return;
+        }
+        fixedTimeLogged = true;
+        LOG.warn("Rotten Flesh to Leather: this Minecraft version's furnace is fixed at 200 "
+                + "ticks, so smeltTimeTicks={} cannot be applied; smelting uses vanilla timing",
+                spec.smeltTimeTicks());
     }
 
     public static int adjustedFurnaces() {

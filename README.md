@@ -15,10 +15,10 @@ minecraft:rotten_flesh x1 --furnace--> minecraft:leather x1
 
 | Platform | File | Minecraft |
 | --- | --- | --- |
-| Forge | `rottenleather-<mcversion>-1.0.0.jar` | one jar per supported 1.8–1.12.2 release |
-| Bukkit / Spigot / Paper | `rottenleather-bukkit-1.0.0.jar` | 1.8.8–1.12.2 (see the matrix) |
-| BungeeCord / Waterfall | `rottenleather-bungee-1.0.0.jar` | proxy module, any modern BungeeCord/Waterfall |
-| Velocity | `rottenleather-velocity-1.0.0.jar` | Velocity 3.x |
+| Forge | `rottenleather-<mcversion>-1.0.1.jar` | one jar per supported 1.8–1.12.2 release |
+| Bukkit / Spigot / Paper | `rottenleather-bukkit-1.0.1.jar` | 1.8.8–1.12.2 (see the matrix) |
+| BungeeCord / Waterfall | `rottenleather-bungee-1.0.1.jar` | proxy module, any modern BungeeCord/Waterfall |
+| Velocity | `rottenleather-velocity-1.0.1.jar` | Velocity 3.x |
 
 See [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the exact versions and how each one was
 verified. Versions that were not tested are not listed as supported.
@@ -28,7 +28,7 @@ verified. Versions that were not tested are not listed as supported.
 **Forge (single player or server):** put the jar matching your Minecraft version in `mods/`.
 Nothing else is required; the recipe is registered on load.
 
-**Bukkit / Spigot / Paper:** drop `rottenleather-bukkit-1.0.0.jar` in `plugins/`.
+**Bukkit / Spigot / Paper:** drop `rottenleather-bukkit-1.0.1.jar` in `plugins/`.
 
 **BungeeCord / Waterfall / Velocity:** drop the matching proxy jar in `plugins/`. The proxy has no
 world and therefore no furnace — see [`docs/PROXIES.md`](docs/PROXIES.md) for what the module does
@@ -61,8 +61,10 @@ changed, and their original timing is restored the moment the input slot changes
 keep vanilla 200-tick timing.
 
 Minecraft 1.8.x and 1.9.x furnaces compare progress against a hard-coded 200 and expose no
-total-cook-time field, so `smeltTimeTicks` is ignored there (the mod logs one warning and smelts at
-vanilla speed). Custom cook time works on 1.10 and newer.
+total-cook-time field, and Forge 1.10 behaves the same way, so `smeltTimeTicks` is ignored on those
+combinations (the mod logs one warning and smelts at vanilla speed). `/rottenleather status` reports
+`customCookTime` for the running server; custom timing is verified on Forge 1.10.2-1.12.2 and on
+Paper 1.10.2-1.12.2.
 
 `conflictPolicy=replace` needs a way to remove an existing recipe. That exists on Forge 1.9+ only;
 on Forge 1.8.x and on every Bukkit 1.8–1.12.2 server it is unavailable, and the mod says so and
@@ -73,10 +75,15 @@ keeps the existing recipe instead of deleting it.
 | Command | Where | Purpose |
 | --- | --- | --- |
 | `/rottenleather status` | Forge, Bukkit (`/rfl`) | print the active recipe, XP, ticks, fingerprint and registration state |
-| `/rottenleather reload` | Forge, Bukkit (`/rfl`) | re-read the config and re-register the recipe |
+| `/rottenleather reload` | Forge, Bukkit (`/rfl`) | re-read the config and apply it live (see the note below) |
 | `/rflnet` | BungeeCord/Waterfall/Velocity | show the recipe reports collected from backends |
 
 Bukkit's command requires the `rottenleather.admin` permission (default: op).
+
+On Forge, reload re-registers the recipe, so input, output, count, XP and cook time all change. The
+1.8-1.12.2 Bukkit API has no way to remove a registered furnace recipe, so a Bukkit reload applies a
+changed XP and cook time immediately and logs that an output-count change only takes effect after a
+server restart.
 
 ## Build from source
 
@@ -98,10 +105,16 @@ Artifacts land in `dist/`.
 ## Test
 
 `tools/test-core.sh` runs the shared Java suite (spec validation, conflict decisions, cook-time
-rules). `tools/probe-forge.sh` and `tools/probe-bukkit.sh` boot real servers, place hopper-fed
-furnaces, and assert on the contents of output chests with `/testforblock`; they also check custom
-timing, XP, output count, conflict policies, live reload and that vanilla recipes keep vanilla
-timing. `tools/probe-proxies.sh` boots BungeeCord and Velocity and proves the modules enable.
+rules). `tools/probe-forge.sh <mc> <forge> <scenario>` and `tools/probe-bukkit.sh <mc> <scenario>`
+boot a real server with a fresh JVM and world for **one** scenario, place a hopper-fed furnace, and
+assert on observable state only: the furnace block turning lit, the output chest's exact NBT, the
+coal/input/output slots emptying, and the smelt measured in server ticks. Scenarios cover the default
+recipe, output count, XP, custom cook time (or the documented warning where a version cannot honour
+it), vanilla-recipe isolation, live reload, and both conflict policies.
+
+`tools/run-matrix.sh` runs every version and scenario in sequence and records `logs/MATRIX.txt`, from
+which `tools/matrix.py` regenerates [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
+`tools/probe-proxies.sh` boots BungeeCord and Velocity and proves the modules enable.
 
 See [`docs/TESTING.md`](docs/TESTING.md) for what each check proves and what it does not cover.
 

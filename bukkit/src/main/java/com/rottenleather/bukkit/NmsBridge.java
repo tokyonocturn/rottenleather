@@ -61,7 +61,15 @@ public final class NmsBridge {
             tileEntityListField = findField(worldClass, "tileEntityList", "loadedTileEntityList");
             Class<?> craftWorld = Class.forName("org.bukkit.craftbukkit." + version + ".CraftWorld");
             craftWorldGetHandle = craftWorld.getMethod("getHandle");
-            cookTimeReady = cookTimeField != null && cookTimeTotalField != null && tileEntityListField != null;
+            // 1.8 and 1.9 furnaces compare cookTime against a hard-coded 200 and ignore any total
+            // field that happens to exist, so claiming support there would silently do nothing.
+            cookTimeReady = supportsTotalCookTime(version) && cookTimeField != null
+                    && cookTimeTotalField != null && tileEntityListField != null;
+            if (!supportsTotalCookTime(version)) {
+                log.warning("Rotten Flesh to Leather: this server's furnace is fixed at 200 ticks "
+                        + "(Minecraft " + version + "); smelt-time-ticks cannot be applied and "
+                        + "vanilla timing is used");
+            }
         } catch (Throwable t) {
             cookTimeReady = false;
             log.warning("Rotten Flesh to Leather: furnace cook-time API not available on " + version
@@ -76,12 +84,83 @@ public final class NmsBridge {
             recipesClass = Class.forName("net.minecraft.server." + version + ".RecipesFurnace");
             recipesInstance = recipesClass.getMethod("getInstance").invoke(null);
             experienceField = findField(recipesClass, "experience", "experienceList");
+            if (experienceField == null) {
+                // Spigot renames members between releases; locate the map that holds Floats instead
+                // of relying on a name, then prove it works with a round trip below.
+                experienceField = findFloatMapField(recipesClass, recipesInstance);
+            }
             experienceReady = experienceField != null;
+            if (experienceReady && !roundTripExperience()) {
+                experienceReady = false;
+                log.warning("Rotten Flesh to Leather: recipe experience API did not respond on "
+                        + version + "; experience will stay at the server default");
+            }
+            if (!experienceReady) {
+                log.warning("Rotten Flesh to Leather: recipe experience API not available on "
+                        + version + " (fields: " + fieldSummary(recipesClass) + ")");
+            }
         } catch (Throwable t) {
             experienceReady = false;
             log.warning("Rotten Flesh to Leather: recipe experience API not available on " + version
                     + " (" + t + "); experience will stay at the server default");
         }
+    }
+
+    /** 1.8 and 1.9 hard-code the furnace's cook time; the total field only became real in 1.10. */
+    private static boolean supportsTotalCookTime(String nmsVersion) {
+        return !(nmsVersion.startsWith("v1_8") || nmsVersion.startsWith("v1_9"));
+    }
+
+    /** The field on the recipes class that maps a result stack to its experience, found by type. */
+    @SuppressWarnings("unchecked")
+    private static Field findFloatMapField(Class<?> owner, Object instance) {
+        for (Field field : owner.getDeclaredFields()) {
+            if (!Map.class.isAssignableFrom(field.getType())) {
+                continue;
+            }
+            try {
+                field.setAccessible(true);
+                Object value = field.get(instance);
+                if (!(value instanceof Map)) {
+                    continue;
+                }
+                Map<Object, Object> map = (Map<Object, Object>) value;
+                for (Object entryValue : map.values()) {
+                    if (entryValue instanceof Float) {
+                        return field;
+                    }
+                }
+            } catch (Throwable ignored) {
+                // not the map we are after
+            }
+        }
+        return null;
+    }
+
+    /** Proves the experience map really stores and returns a value before the plugin relies on it. */
+    private static boolean roundTripExperience() {
+        ItemStack probe = new ItemStack(Material.STICK, 1);
+        try {
+            if (!setExperience(probe, 0.5F)) {
+                return false;
+            }
+            return Math.abs(getExperience(probe) - 0.5F) < 0.0001F;
+        } catch (Throwable t) {
+            return false;
+        } finally {
+            removeExperience(probe);
+        }
+    }
+
+    private static String fieldSummary(Class<?> owner) {
+        StringBuilder out = new StringBuilder();
+        for (Field field : owner.getDeclaredFields()) {
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(field.getName()).append(':').append(field.getType().getSimpleName());
+        }
+        return out.toString();
     }
 
     private static Field findField(Class<?> owner, String... names) {
@@ -143,10 +222,49 @@ public final class NmsBridge {
         try {
             Object nms = asNmsCopy.invoke(null, result);
             Map<Object, Float> map = (Map<Object, Float>) experienceField.get(recipesInstance);
+            // CraftBukkit keys the map by the full result stack (stack size included), so a reload
+            // that changes output-count would otherwise leave the old entry behind and make the
+            // granted XP depend on which stack size the furnace happens to produce. Keep exactly
+            // one entry per result item.
+            java.util.Iterator<Map.Entry<Object, Float>> it = map.entrySet().iterator();
+            while (it.hasNext()) {
+                Object key = it.next().getKey();
+                if (key == null) {
+                    continue;
+                }
+                ItemStack asBukkit = (ItemStack) asBukkitCopy.invoke(null, key);
+                if (asBukkit != null && asBukkit.getType() == result.getType()) {
+                    it.remove();
+                }
+            }
             map.put(nms, Float.valueOf(experience));
             return true;
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    /** Removes every experience entry for this result item. */
+    @SuppressWarnings("unchecked")
+    private static void removeExperience(ItemStack result) {
+        if (!experienceReady) {
+            return;
+        }
+        try {
+            Map<Object, Float> map = (Map<Object, Float>) experienceField.get(recipesInstance);
+            java.util.Iterator<Map.Entry<Object, Float>> it = map.entrySet().iterator();
+            while (it.hasNext()) {
+                Object key = it.next().getKey();
+                if (key == null) {
+                    continue;
+                }
+                ItemStack asBukkit = (ItemStack) asBukkitCopy.invoke(null, key);
+                if (asBukkit != null && asBukkit.getType() == result.getType()) {
+                    it.remove();
+                }
+            }
+        } catch (Throwable ignored) {
+            // nothing to clean up
         }
     }
 

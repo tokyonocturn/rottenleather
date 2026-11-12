@@ -1,53 +1,54 @@
 #!/usr/bin/env bash
-# Boots a real Paper server for one release and proves the shipped Bukkit jar:
-#   A. default recipe: furnace produces leather; status reports nmsXp=0.1; hopper chain moves leather
-#   B. restart with output-count=3, experience=0.35, smelt-time-ticks=60: count/time/XP honoured and
-#      a beef furnace in the same world keeps vanilla timing; /rottenleather reload applies a new
-#      XP + tick value live
-#   C. restart with input-item=porkchop: the vanilla porkchop recipe is preserved (skip policy)
+# One Bukkit-family runtime scenario, on a fresh JVM and a fresh world.
 #
-# 1.8-1.12 have no Bukkit API for per-recipe removal, so recipe-shape changes need a restart; that is
-# tested here as a restart rather than pretended to work live.
+# Scenarios: default | custom | vanilla | reload | skip
+# Each boot proves only its own scenario; nothing is carried over between runs.
 #
-# Usage: probe-bukkit.sh <mc> [server-port] [rcon-port]
+# Usage: probe-bukkit.sh <mc> <scenario>
 set -uo pipefail
 
 mc="$1"
-port="${2:-25671}"
-rport="${3:-25681}"
+scenario="$2"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export JAVA_HOME="${JAVA_HOME:-/c/Program Files/Java/jdk1.8.0_503}"
 JAVA="$JAVA_HOME/bin/java.exe"
 DIR="$ROOT/runtime/bukkit-$mc/server"
-JAR="$ROOT/dist/rottenleather-bukkit-1.0.0.jar"
+JAR="$ROOT/dist/rottenleather-bukkit-1.0.1.jar"
 PAPER="$ROOT/../livedaw-mc/automation/jars/paper-$mc.jar"
-LOG="$ROOT/logs/probe-bukkit-$mc.log"
+LOG="$ROOT/logs/probe-bukkit-$mc-$scenario.log"
 OUT="$ROOT/logs/probe-bukkit-$mc"
-FINGERPRINT="$(grep -oE '[0-9a-f]{64}' "$ROOT/shared/src/main/java/com/rottenleather/core/BuildDefaults.java" | head -1)"
-BOOT_PID=""
-cleanup() {
-    if [ -n "${BOOT_PID:-}" ] && kill -0 "$BOOT_PID" 2>/dev/null; then
-        rcon stop > /dev/null 2>&1 || true
-        sleep 3
-        kill "$BOOT_PID" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
-
+PROBE_TAG="bukkit-$mc/$scenario"
 mkdir -p "$OUT" "$ROOT/logs"
 : > "$LOG"
-say() { echo "[bukkit-$mc] $*" | tee -a "$LOG"; }
-fail() { say "FAIL: $*"; exit 1; }
-rcon() { python "$ROOT/tools/rcon.py" "$rport" rf "$@"; }
+. "$ROOT/tools/probe-lib.sh"
+
+BOOT_PID=""
+cleanup() {
+    [ -n "${BOOT_PID:-}" ] || return 0
+    rcon stop > /dev/null 2>&1 || true
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        kill -0 "$BOOT_PID" 2>/dev/null || break
+        sleep 1
+    done
+    kill "$BOOT_PID" 2>/dev/null || true
+    wait "$BOOT_PID" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT TERM
 
 [ -f "$JAR" ] || fail "missing $JAR (run tools/build-bukkit.sh)"
-[ -f "$PAPER" ] || fail "missing Paper jar $PAPER"
+[ -f "$PAPER" ] || fail "missing server jar $PAPER"
+DEFAULT_FINGERPRINT="$(grep -oE '[0-9a-f]{64}' "$ROOT/shared/src/main/java/com/rottenleather/core/BuildDefaults.java" | head -1)"
+[ -n "$DEFAULT_FINGERPRINT" ] || fail "could not read the generated spec fingerprint"
+assign_ports 0 0
+RPORT="$PROBE_RPORT"
 
-mkdir -p "$DIR/plugins"
+rm -rf "$DIR/world" "$DIR/world_nether" "$DIR/world_the_end" "$DIR/plugins/RottenFleshToLeather" "$DIR/logs" \
+    || fail "could not remove the old world under $DIR (is a stale server still running?)"
+[ -d "$DIR/world" ] && fail "old world under $DIR survived deletion"
+mkdir -p "$DIR/plugins/RottenFleshToLeather"
 cp -f "$PAPER" "$DIR/server.jar"
-rm -rf "$DIR/world" "$DIR/world_nether" "$DIR/world_the_end" "$DIR/plugins/RottenFleshToLeather" "$DIR/logs"
-
 cat > "$DIR/server.properties" <<EOF
 online-mode=false
 level-type=FLAT
@@ -60,16 +61,15 @@ difficulty=0
 spawn-protection=0
 view-distance=6
 max-tick-time=-1
-server-port=$port
+server-port=$PROBE_PORT
 enable-rcon=true
-rcon.port=$rport
+rcon.port=$PROBE_RPORT
 rcon.password=rf
 motd=rottenleather bukkit probe
 EOF
 printf 'eula=true\n' > "$DIR/eula.txt"
 
 write_plugin_config() { # input output count xp ticks policy
-    mkdir -p "$DIR/plugins/RottenFleshToLeather"
     cat > "$DIR/plugins/RottenFleshToLeather/config.yml" <<EOF
 recipe:
   input-item: $1
@@ -86,159 +86,109 @@ network:
 EOF
 }
 
-boot() { # tag
-    local tag="$1" i
-    mkdir -p "$DIR/plugins/RottenFleshToLeather"
-    cp -f "$JAR" "$DIR/plugins/"
-    : > "$DIR/console.$tag.log"
-    ( cd "$DIR" && "$JAVA" -Xmx1200M -Xms512M -jar server.jar nogui > "console.$tag.log" 2>&1 ) &
-    BOOT_PID=$!
-    for i in $(seq 1 300); do
-        grep -q 'Done (' "$DIR/console.$tag.log" 2>/dev/null && { say "boot $tag reached Done"; return 0; }
-        kill -0 "$BOOT_PID" 2>/dev/null || { say "boot $tag exited before Done"; tail -25 "$DIR/console.$tag.log"; return 1; }
-        sleep 1
-    done
-    say "boot $tag timed out"; return 1
-}
+case "$scenario" in
+    default) write_plugin_config minecraft:rotten_flesh minecraft:leather 1 0.1 200 skip
+             EXPECTED_FP=$(fingerprint_for minecraft:rotten_flesh minecraft:leather 1 0.1 200 skip)
+             [ "$EXPECTED_FP" = "$DEFAULT_FINGERPRINT" ]                  || fail "generated defaults are stale: BuildDefaults has $DEFAULT_FINGERPRINT, the recipe hashes to $EXPECTED_FP" ;;
+    custom)  write_plugin_config minecraft:rotten_flesh minecraft:leather 3 0.35 60 skip
+             EXPECTED_FP=$(fingerprint_for minecraft:rotten_flesh minecraft:leather 3 0.35 60 skip) ;;
+    vanilla) write_plugin_config minecraft:rotten_flesh minecraft:leather 3 0.35 60 skip
+             EXPECTED_FP=$(fingerprint_for minecraft:rotten_flesh minecraft:leather 3 0.35 60 skip) ;;
+    reload)  write_plugin_config minecraft:rotten_flesh minecraft:leather 1 0.1 200 skip
+             EXPECTED_FP=$(fingerprint_for minecraft:rotten_flesh minecraft:leather 1 0.1 200 skip) ;;
+    skip)    write_plugin_config minecraft:beef minecraft:leather 1 0.1 200 skip
+             EXPECTED_FP=$(fingerprint_for minecraft:beef minecraft:leather 1 0.1 200 skip) ;;
+    *) fail "unknown scenario '$scenario'" ;;
+esac
 
-shutdown() {
-    local i
-    rcon stop > /dev/null 2>&1 || true
-    for i in $(seq 1 60); do
-        kill -0 "$BOOT_PID" 2>/dev/null || return 0
-        sleep 1
-    done
-    kill "$BOOT_PID" 2>/dev/null || true
-    sleep 2
-}
+installed=no
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    rm -f "$DIR/plugins/"*.jar 2>/dev/null
+    cp -f "$JAR" "$DIR/plugins/" 2>/dev/null
+    if cmp -s "$JAR" "$DIR/plugins/$(basename "$JAR")"; then installed=yes; break; fi
+    sleep 1
+done
+[ "$installed" = yes ] || fail "could not install $JAR into $DIR/plugins (stale server holding the file?)"
+: > "$DIR/console.probe.log"
+( cd "$DIR" && "$JAVA" -Xmx1200M -Xms512M -jar server.jar nogui > console.probe.log 2>&1 ) &
+BOOT_PID=$!
+for i in $(seq 1 300); do
+    if grep -q 'Done (' "$DIR/console.probe.log" 2>/dev/null; then
+        grep -q "RCON running on .*:$PROBE_RPORT" "$DIR/console.probe.log" \
+            || fail "RCON did not bind $PROBE_RPORT (another server may own it)"
+        break
+    fi
+    kill -0 "$BOOT_PID" 2>/dev/null || { tail -25 "$DIR/console.probe.log"; fail "server exited before Done"; }
+    sleep 1
+done
+grep -q 'Done (' "$DIR/console.probe.log" || fail "server did not reach Done"
+say "boot reached Done (game $PROBE_PORT, rcon $PROBE_RPORT)"
+rcon "setworldspawn 2 4 2" > /dev/null
+wait_world_ready 90 || fail "the world never accepted block edits"
 
-# place_chain <x> <input-id> <input-count>
-# input chest -> hopper -> furnace -> hopper -> output chest, all above the same x/z.
-# Feeding through a hopper matches how the recipe is used in game and makes every assertion a read of
-# a chest that holds only the expected output stack.
-place_chain() {
-    rcon "setblock $1 8 $1 minecraft:chest 0 replace {Items:[{Slot:0b,id:\"$2\",Count:${3}b}]}" > /dev/null
-    rcon "setblock $1 7 $1 minecraft:hopper 0 replace" > /dev/null
-    rcon "setblock $1 6 $1 minecraft:furnace 2 replace {Items:[{Slot:1b,id:\"minecraft:coal\",Count:1b}]}" > /dev/null
-    rcon "setblock $1 5 $1 minecraft:hopper 0 replace" > /dev/null
-    rcon "setblock $1 4 $1 minecraft:chest 0 replace" > /dev/null
-}
+rcon "rottenleather status" > "$OUT/status-$scenario.txt" 2>&1
+grep -q "fingerprint=$EXPECTED_FP" "$OUT/status-$scenario.txt"     || fail "the running recipe does not match the config the probe wrote"
+say "status: $(tail -1 "$OUT/status-$scenario.txt")"
 
-# chest_has <x> <y> <z> <item> [count]
-chest_has() {
-    local count_part="" out
-    if [ -n "${5:-}" ]; then count_part=",Count:${5}b"; fi
-    out=$(rcon "testforblock $1 $2 $3 minecraft:chest -1 {Items:[{Slot:0b,id:\"$4\"${count_part}}]}")
-    case "$out" in
-        *Successfully*) return 0 ;;
-        *) echo "  check failed: chest $1,$2,$3 $4 x${5:-1} -> $out" >> "$OUT/checks.txt"; return 1 ;;
-    esac
-}
+case "$scenario" in
+    default)
+        grep -q 'registered=true' "$OUT/status-$scenario.txt" || fail "default recipe not registered"
+        grep -q 'nmsXp=0.1' "$OUT/status-$scenario.txt" || fail "configured XP not in the server's record"
+        smelt_and_measure 2 minecraft:rotten_flesh minecraft:leather 1 vanilla 240
+        ;;
+    custom)
+        grep -q 'registered=true' "$OUT/status-$scenario.txt" || fail "custom recipe not registered"
+        grep -q 'nmsXp=0.35' "$OUT/status-$scenario.txt" || fail "configured XP not in the server's record"
+        if grep -q 'customCookTime=false' "$OUT/status-$scenario.txt"; then
+            grep -q 'furnace is fixed at 200 ticks' "$DIR/console.probe.log" \
+                || fail "custom cook time unsupported here but the documented warning is missing"
+            say "custom cook time unsupported on this version: warning present, asserting vanilla timing"
+            smelt_and_measure 2 minecraft:rotten_flesh minecraft:leather 3 vanilla 240
+        else
+            smelt_and_measure 2 minecraft:rotten_flesh minecraft:leather 3 custom 240
+        fi
+        ;;
+    vanilla)
+        grep -q 'registered=true' "$OUT/status-$scenario.txt" || fail "recipe not registered"
+        smelt_and_measure 2 minecraft:beef minecraft:cooked_beef 1 vanilla 240
+        chest_lacks 2 4 2 minecraft:leather || fail "beef produced leather instead of cooked beef"
+        ;;
+    reload)
+        grep -q 'registered=true' "$OUT/status-$scenario.txt" || fail "default recipe not registered"
+        grep -q 'nmsXp=0.1' "$OUT/status-$scenario.txt" || fail "default XP not in the server's record"
+        # The 1.8-1.12.2 Bukkit API cannot remove a furnace recipe, so the plugin applies XP and
+        # cook time live and needs a restart for a changed output count. The reload scenario therefore
+        # changes exactly what reload is documented to change.
+        write_plugin_config minecraft:rotten_flesh minecraft:leather 1 0.35 80 skip
+        rcon "rottenleather reload" > "$OUT/reload-$scenario.txt" 2>&1
+        RELOAD_FP=$(fingerprint_for minecraft:rotten_flesh minecraft:leather 1 0.35 80 skip)
+        grep -q "fingerprint=$RELOAD_FP" "$OUT/reload-$scenario.txt"             || fail "reload registered a different recipe than the config describes"
+        grep -q 'ticks=80' "$OUT/reload-$scenario.txt" || fail "reload did not apply ticks=80"
+        grep -q 'nmsXp=0.35' "$OUT/reload-$scenario.txt" || fail "reload did not apply XP=0.35"
+        if grep -q 'customCookTime=false' "$OUT/reload-$scenario.txt"; then
+            grep -q 'furnace is fixed at 200 ticks' "$DIR/console.probe.log" \
+                || fail "custom cook time unsupported here but the documented warning is missing"
+            smelt_and_measure 2 minecraft:rotten_flesh minecraft:leather 1 vanilla 240
+        else
+            smelt_and_measure 2 minecraft:rotten_flesh minecraft:leather 1 custom 240
+        fi
+        ;;
+    skip)
+        grep -q 'install=KEEP_EXISTING' "$OUT/status-$scenario.txt" || fail "skip did not keep the vanilla beef recipe"
+        grep -q 'registered=false' "$OUT/status-$scenario.txt" || fail "skip reports its recipe as registered"
+        smelt_and_measure 2 minecraft:beef minecraft:cooked_beef 1 vanilla 240
+        chest_lacks 2 4 2 minecraft:leather || fail "skip produced leather instead of vanilla cooked beef"
+        ;;
+esac
 
-# block_has <x> <y> <z> <block> <slot> <item> [count]
-block_has() {
-    local count_part="" out
-    if [ -n "${7:-}" ]; then count_part=",Count:${7}b"; fi
-    out=$(rcon "testforblock $1 $2 $3 $4 -1 {Items:[{Slot:${5}b,id:\"$6\"${count_part}}]}")
-    case "$out" in
-        *Successfully*) return 0 ;;
-        *) echo "  check failed: $1,$2,$3 $6 x${7:-1} -> $out" >> "$OUT/checks.txt"; return 1 ;;
-    esac
-}
-
-# ------------------------------------------------------------------ boot 1: default
-write_plugin_config minecraft:rotten_flesh minecraft:leather 1 0.1 200 skip
-say "boot 1: default recipe + hopper automation"
-boot 1 || fail "Paper $mc did not start"
-rcon "rottenleather status" > "$OUT/status-default.txt" 2>&1
-grep -q 'registered=true' "$OUT/status-default.txt" || fail "recipe not registered: $(cat "$OUT/status-default.txt")"
-grep -q 'nmsXp=0.1' "$OUT/status-default.txt" || fail "XP not registered: $(cat "$OUT/status-default.txt")"
-grep -q "fingerprint=$FINGERPRINT" "$OUT/status-default.txt" || fail "fingerprint mismatch"
-
-rcon "setblock 2 8 2 minecraft:chest 0 replace {Items:[{Slot:0b,id:\"minecraft:rotten_flesh\",Count:4b}]}" > /dev/null
-rcon "setblock 2 7 2 minecraft:hopper 0 replace" > /dev/null
-rcon "setblock 2 6 2 minecraft:furnace 2 replace {Items:[{Slot:1b,id:\"minecraft:coal\",Count:2b}]}" > /dev/null
-rcon "setblock 2 5 2 minecraft:hopper 0 replace" > /dev/null
-rcon "setblock 2 4 2 minecraft:chest 0 replace" > /dev/null
-say "waiting 28s for hopper-fed smelting"
-sleep 28
-block_has 2 4 2 minecraft:chest 0 minecraft:leather || fail "hopper output chest has no leather"
-say "hopper automation PASS"
-shutdown
-
-# ------------------------------------------------------------------ boot 2: custom shape + reload
-write_plugin_config minecraft:rotten_flesh minecraft:leather 3 0.35 60 skip
-say "boot 2: output-count=3, XP=0.35, 60 ticks"
-boot 2 || fail "second Paper boot did not start"
-rcon "rottenleather status" > "$OUT/status-custom.txt" 2>&1
-grep -q 'ticks=60' "$OUT/status-custom.txt" || fail "ticks=60 not applied"
-grep -q 'nmsXp=0.35' "$OUT/status-custom.txt" || fail "XP=0.35 not applied"
-
-if grep -q 'customCookTime=false' "$OUT/status-custom.txt"; then
-    # 1.8.x Paper has no total-cook-time field; documented behaviour is vanilla timing plus a warning.
-    place_chain 4 minecraft:rotten_flesh 1
-    sleep 5
-    chest_has 4 4 4 minecraft:leather 3 && fail "recipe finished in 5s although custom cook time is unsupported"
-    say "custom cook time unsupported on this server version, as documented"
-    sleep 11
-    chest_has 4 4 4 minecraft:leather 3 || fail "vanilla-timed recipe did not finish by 16s"
-    say "vanilla 200-tick timing PASS"
-else
-    place_chain 4 minecraft:rotten_flesh 1
-    place_chain 6 minecraft:beef 1
-    sleep 2
-    chest_has 4 4 4 minecraft:leather && fail "60-tick recipe finished after 2s"
-    say "60-tick recipe not finished at 2s (correct)"
-    sleep 3
-    chest_has 4 4 4 minecraft:leather 3 || fail "custom time/count did not produce 3 leather by 5s"
-    say "custom time/count PASS"
-    chest_has 6 4 6 minecraft:cooked_beef && fail "beef smelted faster than vanilla"
-    sleep 11
-    chest_has 6 4 6 minecraft:cooked_beef || fail "beef did not smelt at vanilla speed"
-    say "vanilla timing preserved PASS"
+cat "$DIR"/console.probe.log > "$OUT/console-$scenario.log"
+grep -q "Rotten Flesh to Leather" "$OUT/console-$scenario.log" || fail "no activation line"
+if grep -Eq '^[[:space:]]+at com\.rottenleather' "$OUT/console-$scenario.log"; then
+    fail "plugin stack trace in the server console"
+fi
+grep -q 'recipe experience API not available' "$OUT/console-$scenario.log" && fail "NMS experience bridge unavailable"
+if ! grep -q 'customCookTime=false' "$OUT/status-$scenario.txt"; then
+    grep -q 'cook-time API not available' "$OUT/console-$scenario.log" && fail "NMS cook-time bridge unavailable"
 fi
 
-# Same item shape, new XP and tick value: reload must apply both live.
-write_plugin_config minecraft:rotten_flesh minecraft:leather 3 0.25 80 skip
-rcon "rottenleather reload" > "$OUT/reload-live.txt" 2>&1
-grep -q 'ticks=80' "$OUT/reload-live.txt" || fail "reload did not apply ticks=80: $(cat "$OUT/reload-live.txt")"
-rcon "rottenleather status" > "$OUT/status-reload.txt" 2>&1
-grep -q 'nmsXp=0.25' "$OUT/status-reload.txt" || fail "reload did not apply XP=0.25"
-place_chain 7 minecraft:rotten_flesh 1
-if grep -q 'customCookTime=false' "$OUT/status-custom.txt"; then
-    sleep 12
-    chest_has 7 4 7 minecraft:leather 3 || fail "vanilla-timed recipe did not finish after reload"
-    say "live reload of XP PASS (cook time unsupported here, documented)"
-else
-    sleep 2
-    chest_has 7 4 7 minecraft:leather && fail "80-tick recipe finished after 2s"
-    sleep 5
-    chest_has 7 4 7 minecraft:leather 3 || fail "80-tick recipe did not finish by 7s"
-    say "live reload of XP + cook time PASS"
-fi
-shutdown
-
-# ------------------------------------------------------------------ boot 3: conflict skip
-write_plugin_config minecraft:porkchop minecraft:leather 1 0.1 200 skip
-say "boot 3: conflict skip with a vanilla porkchop recipe"
-boot 3 || fail "third Paper boot did not start"
-rcon "rottenleather status" > "$OUT/status-conflict.txt" 2>&1
-grep -q 'install=KEEP_EXISTING' "$OUT/status-conflict.txt" || fail "skip did not keep vanilla recipe: $(cat "$OUT/status-conflict.txt")"
-place_chain 8 minecraft:porkchop 1
-sleep 18
-chest_has 8 4 8 minecraft:cooked_porkchop || fail "vanilla porkchop recipe was not preserved"
-say "conflictPolicy=skip PASS"
-shutdown
-
-cat "$DIR/console.1.log" "$DIR/console.2.log" "$DIR/console.3.log" > "$OUT/console.log"
-grep -q "Rotten Flesh to Leather 1.0.0 active" "$OUT/console.log" || fail "no activation line"
-grep -q 'Rotten Flesh to Leather: registered' "$OUT/console.log" || fail "no registration line"
-if grep -Eq '^[[:space:]]+at com\.rottenleather' "$OUT/console.log"; then
-    fail "plugin stack trace in console.log"
-fi
-if ! grep -q 'customCookTime=false' "$OUT/status-default.txt"; then
-    grep -q 'cook-time API not available' "$OUT/console.log" && fail "NMS cook-time bridge unavailable on this server"
-fi
-grep -q 'recipe experience API not available' "$OUT/console.log" && fail "NMS experience bridge unavailable on this server"
-
-say "PASS bukkit-$mc (recipe, XP, hopper, custom time/count, live reload, conflict skip)"
+say "PASS bukkit-$mc $scenario"

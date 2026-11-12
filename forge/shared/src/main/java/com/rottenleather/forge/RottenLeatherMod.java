@@ -20,7 +20,7 @@ public final class RottenLeatherMod {
 
     public static final String MOD_ID = BuildDefaults.MOD_ID;
     public static final String NAME = "Rotten Flesh to Leather";
-    public static final String VERSION = "1.0.0";
+    public static final String VERSION = "1.0.1";
 
     private static final Logger LOG = LogManager.getLogger(MOD_ID);
 
@@ -36,6 +36,7 @@ public final class RottenLeatherMod {
         config = ForgeConfig.load(configFile);
         spec = config.toSpec();
         MinecraftForge.EVENT_BUS.register(CookTimeController.class);
+        CookTimeController.warnIfTimeUnsupported();
         LOG.info("Rotten Flesh to Leather {} for MC {} starting: {}", VERSION,
                 VersionAdapterImpl.MC_VERSION, spec.summary());
     }
@@ -60,6 +61,7 @@ public final class RottenLeatherMod {
         RecipeSpec previous = spec;
         spec = config.toSpec();
         CookTimeController.releaseAll();
+        CookTimeController.warnIfTimeUnsupported();
         ForgeRecipeInstaller.Result result = ForgeRecipeInstaller.install(spec, true);
         lastInstallDetail = result.detail;
         if (!previous.sameRecipe(spec)) {

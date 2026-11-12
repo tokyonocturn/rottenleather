@@ -21,7 +21,7 @@ echo "=== proxies ==="
 bash tools/build-proxies.sh || status=1
 
 echo "=== collecting dist ==="
-for jar in forge/versions/*/build/libs/rottenleather-*-1.0.0.jar; do
+for jar in forge/versions/*/build/libs/rottenleather-*-1.0.1.jar; do
     case "$jar" in *-sources.jar) continue ;; esac
     cp -f "$jar" dist/
 done

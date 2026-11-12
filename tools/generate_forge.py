@@ -37,7 +37,7 @@ BUILD_GRADLE = """buildscript {{
 }}
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.0.0"
+version = "1.0.1"
 group = "com.rottenleather"
 archivesBaseName = "rottenleather-{mc}"
 
@@ -448,7 +448,7 @@ def main(argv):
         stale |= write(base / "src" / "main" / "java" / "com" / "rottenleather" / "forge" / "VersionEntry.java",
                        VERSION_ENTRY.format(mc=mc), check)
         stale |= write(base / "src" / "main" / "java" / "com" / "rottenleather" / "forge" / "VersionAdapterImpl.java",
-                       ADAPTER.format(mc=mc, supports_cook_time=("false" if mc in ("1.8.8", "1.8.9", "1.9", "1.9.4") else "true"),
+                       ADAPTER.format(mc=mc, supports_cook_time=("false" if mc in ("1.8.8", "1.8.9", "1.9", "1.9.4", "1.10") else "true"),
                                       supports_replace=("false" if mc in ("1.8.8", "1.8.9") else "true"),
                                       registry=registry, empty=empty, count=count,
                                       chat_import="import %s;" % chat_class,

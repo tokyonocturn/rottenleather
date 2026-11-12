@@ -28,7 +28,7 @@ mkdir -p "$OUT/classes" "$DIST"
 
 cp -r "$ROOT/bukkit/src/main/resources/." "$OUT/classes/"
 
-"$JAR" cf "$DIST/rottenleather-bukkit-1.0.0.jar" -C "$OUT/classes" .
+"$JAR" cf "$DIST/rottenleather-bukkit-1.0.1.jar" -C "$OUT/classes" .
 
-echo "built $DIST/rottenleather-bukkit-1.0.0.jar"
-"$JAR" tf "$DIST/rottenleather-bukkit-1.0.0.jar" | grep -E "plugin.yml|config.yml|RottenLeatherPlugin.class|BuildDefaults.class"
+echo "built $DIST/rottenleather-bukkit-1.0.1.jar"
+"$JAR" tf "$DIST/rottenleather-bukkit-1.0.1.jar" | grep -E "plugin.yml|config.yml|RottenLeatherPlugin.class|BuildDefaults.class"
