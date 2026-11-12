@@ -14,7 +14,7 @@ See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more i
 #################################################
 :deobfCompileDummyTask
 :getVersionJson
-:extractUserdev
+:extractUserdev UP-TO-DATE
 :downloadClient SKIPPED
 :downloadServer SKIPPED
 :splitServerJar SKIPPED
@@ -23,19 +23,19 @@ See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more i
 :deobfProvidedDummyTask
 :extractDependencyATs SKIPPED
 :extractMcpData SKIPPED
-:extractMcpMappings SKIPPED
+:extractMcpMappings
 :genSrgs SKIPPED
 :deobfMcMCP SKIPPED
-:sourceApiJava
+:sourceApiJava UP-TO-DATE
 :compileApiJava UP-TO-DATE
 :processApiResources UP-TO-DATE
 :apiClasses UP-TO-DATE
-:sourceMainJava
+:sourceMainJava UP-TO-DATE
 :compileJava
-:processResources
+:processResources UP-TO-DATE
 :classes
 :jar
-:sourceTestJava
+:sourceTestJava UP-TO-DATE
 :compileTestJava UP-TO-DATE
 :processTestResources UP-TO-DATE
 :testClasses UP-TO-DATE
@@ -43,9 +43,8 @@ See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more i
 :reobfJar
 :extractRangemapReplacedMain
 C:\Users\kevin\.config\freebuff-desktop\local-projects\5db335b2-d442-4a70-8e64-a7d10f9fd562\rottenleather\forge\versions\1.8.9\build\sources\main\java
-:retromapReplacedMain
-remapping source...
-:sourceJar
+:retromapReplacedMain UP-TO-DATE
+:sourceJar UP-TO-DATE
 :assemble
 :check UP-TO-DATE
 :build
@@ -53,7 +52,7 @@ remapping source...
 :getAssetIndex UP-TO-DATE
 :getAssets
 :makeStart
-:sourceVerifyJava
+:sourceVerifyJava UP-TO-DATE
 :compileVerifyJava
 :processVerifyResources UP-TO-DATE
 :verifyClasses
@@ -144,10 +143,10 @@ PASS entry.name
 PASS entry.version
 PASS entry.acceptedMc
 PASS entry.remoteVersions
-PASS entry.handlerParams.preInit
 PASS entry.handlerParams.serverStarting
-PASS entry.handlerParams.serverStopping
 PASS entry.handlerParams.loadComplete
+PASS entry.handlerParams.serverStopping
+PASS entry.handlerParams.preInit
 PASS entry.handlers
 PASS furnace.cookTimeType
 PASS furnace.totalCookTimeType
@@ -165,4 +164,4 @@ FORGE_SUITE mc=1.8.9 pass=24 fail=0
 
 BUILD SUCCESSFUL
 
-Total time: 14.138 secs
+Total time: 19.568 secs

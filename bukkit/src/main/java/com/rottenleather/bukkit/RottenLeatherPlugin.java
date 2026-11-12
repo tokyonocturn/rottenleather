@@ -129,6 +129,7 @@ public final class RottenLeatherPlugin extends JavaPlugin implements Listener {
                 + " registered=" + BukkitRecipeInstaller.isRegistered()
                 + " install=" + BukkitRecipeInstaller.detail()
                 + " nmsXp=" + experienceReport()
+                + " customCookTime=" + NmsBridge.cookTimeReady()
                 + " adjustedFurnaces=" + tracker.trackedCount();
     }
 

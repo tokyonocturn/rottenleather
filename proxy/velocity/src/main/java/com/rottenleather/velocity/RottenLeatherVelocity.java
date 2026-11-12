@@ -48,7 +48,7 @@ public final class RottenLeatherVelocity {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         server.getChannelRegistrar().register(CHANNEL);
-        server.getEventManager().register(this, this);
+        // The plugin main instance is registered with the event manager automatically.
         CommandMeta meta = server.getCommandManager().metaBuilder("rflnet")
                 .plugin(this)
                 .build();

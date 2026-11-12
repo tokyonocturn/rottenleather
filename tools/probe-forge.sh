@@ -207,28 +207,40 @@ else
     say "vanilla beef recipe still works PASS"
 fi
 
-write_config minecraft:porkchop minecraft:leather 1 0.1 200 skip
+write_config minecraft:beef minecraft:leather 1 0.1 200 skip
 rcon "rottenleather reload" > "$OUT/reload-skip.txt"
 grep -q 'install=KEEP_EXISTING' "$OUT/reload-skip.txt" || fail "skip policy did not keep vanilla porkchop recipe: $(cat "$OUT/reload-skip.txt")"
-place_chain 8 minecraft:porkchop 1
+place_chain 8 minecraft:beef 1
 sleep 18
-chest_has 8 4 8 minecraft:cooked_porkchop 1 || fail "vanilla porkchop recipe was not preserved under skip"
+chest_has 8 4 8 minecraft:cooked_beef 1 || fail "vanilla beef recipe was not preserved under skip"
 say "conflictPolicy=skip PASS"
 
-write_config minecraft:porkchop minecraft:leather 1 0.1 200 replace
-rcon "rottenleather reload" > "$OUT/reload-replace.txt"
-grep -q 'registered=true' "$OUT/reload-replace.txt" || fail "replace policy did not register"
-place_chain 10 minecraft:porkchop 1
-sleep 18
-chest_has 10 4 10 minecraft:leather 1 || fail "replace policy did not take over the input"
-say "conflictPolicy=replace PASS"
+if grep -q 'replaceRecipe=false' "$OUT/status-custom.txt"; then
+    # 1.8.x Forge cannot replace an existing smelting entry; the documented behaviour is to warn and
+    # keep the vanilla recipe instead of silently deleting it or claiming success.
+    write_config minecraft:beef minecraft:leather 1 0.1 200 replace
+    rcon "rottenleather reload" > "$OUT/reload-replace.txt"
+    grep -q 'not available on MC' "$OUT/reload-replace.txt"         || fail "replace on a version without replace support did not warn: $(cat "$OUT/reload-replace.txt")"
+    place_chain 10 minecraft:beef 1
+    sleep 25
+    chest_has 10 4 10 minecraft:cooked_beef 1 || fail "unsupported replace did not keep the vanilla beef recipe"
+    say "conflictPolicy=replace unsupported on this version, warned and preserved (documented) PASS"
+else
+    write_config minecraft:beef minecraft:leather 1 0.1 200 replace
+    rcon "rottenleather reload" > "$OUT/reload-replace.txt"
+    grep -q 'registered=true' "$OUT/reload-replace.txt" || fail "replace policy did not register"
+    place_chain 10 minecraft:beef 1
+    sleep 25
+    chest_has 10 4 10 minecraft:leather 1 || fail "replace policy did not take over the input"
+    say "conflictPolicy=replace PASS"
 
-write_config minecraft:porkchop minecraft:leather 1 0.1 200 skip
-rcon "rottenleather reload" > "$OUT/reload-restore.txt"
-place_chain 12 minecraft:porkchop 1
-sleep 18
-chest_has 12 4 12 minecraft:cooked_porkchop 1 || fail "displaced vanilla recipe was not restored on reload"
-say "displaced vanilla recipe restored PASS"
+    write_config minecraft:beef minecraft:leather 1 0.1 200 skip
+    rcon "rottenleather reload" > "$OUT/reload-restore.txt"
+    place_chain 12 minecraft:beef 1
+    sleep 25
+    chest_has 12 4 12 minecraft:cooked_beef 1 || fail "displaced vanilla recipe was not restored on reload"
+    say "displaced vanilla recipe restored PASS"
+fi
 
 shutdown
 

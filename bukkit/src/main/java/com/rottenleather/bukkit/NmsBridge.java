@@ -55,7 +55,7 @@ public final class NmsBridge {
             furnaceTileClass = Class.forName("net.minecraft.server." + version + ".TileEntityFurnace");
             // Spigot/CraftBukkit keeps MCP-style member names on the relocated NMS classes:
             // cookTime and cookTimeTotal are the two fields the furnace ticks itself with.
-            cookTimeField = findField(furnaceTileClass, "cookTime");
+            cookTimeField = findField(furnaceTileClass, "cookTime", "furnaceCookTime");
             cookTimeTotalField = findField(furnaceTileClass, "cookTimeTotal", "totalCookTime");
             Class<?> worldClass = Class.forName("net.minecraft.server." + version + ".World");
             tileEntityListField = findField(worldClass, "tileEntityList", "loadedTileEntityList");

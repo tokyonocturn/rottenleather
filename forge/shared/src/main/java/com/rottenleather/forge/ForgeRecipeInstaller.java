@@ -88,6 +88,14 @@ public final class ForgeRecipeInstaller {
             // (vanilla reads it that way when a player takes the output), not by the input.
             displacedExperience = FurnaceRecipes.instance().getSmeltingExperience(displaced);
         }
+        if (decision == ConflictDecision.REPLACE_EXISTING && !VersionAdapterImpl.SUPPORTS_RECIPE_REPLACE) {
+            registered = false;
+            RottenLeatherMod.setInputItem(null);
+            LOG.warn("Rotten Flesh to Leather: conflictPolicy=replace is not available on MC {}; "
+                    + "kept the existing recipe for {} -> {}", VersionAdapterImpl.MC_VERSION,
+                    spec.inputItem(), VersionAdapterImpl.describe(existing));
+            return new Result(false, "replace-unsupported");
+        }
         if (decision == ConflictDecision.REPLACE_EXISTING) {
             // Forge refuses a registration whose input already maps to something else
             // ("Ignored smelting recipe with conflicting input"), so remove the entry first.

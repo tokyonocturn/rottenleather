@@ -52,6 +52,10 @@ the same map Forge uses for every other furnace recipe, keyed by the result stac
 `conflictPolicy=replace` the existing entry for the input is removed first and remembered, so a later
 reload (or a switch back to `skip`) can restore it.
 
+1.8.x Forge refuses to re-register a smelting input that already has a recipe and its map does not
+reliably accept removal, so `replace` is reported as unavailable there (one warning) and the existing
+recipe is kept. `skip` works on every version, and `replace` works on 1.9+ (verified on 1.12.2).
+
 Cook time: 1.8–1.12.2 has no per-recipe cook time. The world-tick handler scans loaded tile entities
 every 8 ticks, and for furnaces whose input slot holds this recipe's input it writes the configured
 total through `TileEntityFurnace.getField(3)` / `setField(3, ticks)` — the public furnace field API
@@ -79,6 +83,14 @@ logs one warning and keeps the recipe at vanilla timing/XP instead of pretending
 
 `conflictPolicy=replace` is not implementable on these versions (no per-recipe removal in the Bukkit
 API), so the plugin reports it as unavailable and behaves like `skip`.
+
+Item ids use the 1.13 names in the config even on 1.8–1.12 servers; `Materials` maps the flattened
+names to the legacy enum (`porkchop` -> `PORK`, `cooked_porkchop` -> `GRILLED_PORK`, and so on), so
+the same config works on both platforms.
+
+The Bukkit plugin cannot apply a non-vanilla cook time before 1.10 either, because those CraftBukkit
+builds have no total-cook-time field; it logs one warning and keeps vanilla timing, exactly like the
+Forge mod.
 
 ## Proxies
 

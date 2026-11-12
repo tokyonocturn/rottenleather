@@ -32,7 +32,11 @@ listeners:
   forced_hosts: {}
   tab_size: 60
   force_default_server: false
-servers: {}
+servers:
+  lobby:
+    address: 127.0.0.1:25779
+    motd: probe
+    restricted: false
 timeout: 30000
 connection_throttle: 4000
 stats: ''
@@ -60,7 +64,7 @@ mkdir -p "$V/plugins"
 cp -f "$ROOT/libs/proxy/velocity.jar" "$V/velocity.jar"
 cp -f "$ROOT/dist/rottenleather-velocity-1.0.0.jar" "$V/plugins/"
 cat > "$V/velocity.toml" <<'EOF'
-config-version = "2.7"
+config-version = "2.8"
 bind = "127.0.0.1:25778"
 motd = "rottenleather probe"
 show-max-players = 1
@@ -73,6 +77,7 @@ kick-existing-players = false
 ping-passthrough = "DISABLED"
 servers = { lobby = "127.0.0.1:25779" }
 try = ["lobby"]
+forced-hosts = {}
 [advanced]
 compression-threshold = 256
 login-ratelimit = 0

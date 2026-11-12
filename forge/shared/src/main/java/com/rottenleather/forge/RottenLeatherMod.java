@@ -97,6 +97,7 @@ public final class RottenLeatherMod {
                 + " runtimeXp=" + ForgeRecipeInstaller.runtimeExperience(spec)
                 + " active=" + ForgeRecipeInstaller.activeRecipe()
                 + " customCookTime=" + VersionAdapterImpl.SUPPORTS_CUSTOM_COOK_TIME
+                + " replaceRecipe=" + VersionAdapterImpl.SUPPORTS_RECIPE_REPLACE
                 + " adjustedFurnaces=" + CookTimeController.adjustedFurnaces();
     }
 }

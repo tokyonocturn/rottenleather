@@ -30,9 +30,9 @@ See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more i
 :compileApiJava UP-TO-DATE
 :processApiResources UP-TO-DATE
 :apiClasses UP-TO-DATE
-:sourceMainJava
+:sourceMainJava UP-TO-DATE
 :compileJava
-:processResources
+:processResources UP-TO-DATE
 :classes
 :jar
 :sourceTestJava UP-TO-DATE
@@ -43,9 +43,8 @@ See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more i
 :reobfJar
 :extractRangemapReplacedMain
 C:\Users\kevin\.config\freebuff-desktop\local-projects\5db335b2-d442-4a70-8e64-a7d10f9fd562\rottenleather\forge\versions\1.8.8\build\sources\main\java
-:retromapReplacedMain
-remapping source...
-:sourceJar
+:retromapReplacedMain UP-TO-DATE
+:sourceJar UP-TO-DATE
 :assemble
 :check UP-TO-DATE
 :build
@@ -144,10 +143,10 @@ PASS entry.name
 PASS entry.version
 PASS entry.acceptedMc
 PASS entry.remoteVersions
+PASS entry.handlerParams.serverStarting
+PASS entry.handlerParams.loadComplete
 PASS entry.handlerParams.preInit
 PASS entry.handlerParams.serverStopping
-PASS entry.handlerParams.loadComplete
-PASS entry.handlerParams.serverStarting
 PASS entry.handlers
 PASS furnace.cookTimeType
 PASS furnace.totalCookTimeType
@@ -165,4 +164,4 @@ FORGE_SUITE mc=1.8.8 pass=24 fail=0
 
 BUILD SUCCESSFUL
 
-Total time: 13.436 secs
+Total time: 19.206 secs

@@ -32,6 +32,13 @@ public final class VersionAdapterImpl {
      */
     public static final boolean SUPPORTS_CUSTOM_COOK_TIME = true;
 
+    /**
+     * 1.8.x Forge refuses to register a smelting recipe for an input that already has one and its
+     * map does not accept removal reliably, so conflictPolicy=replace is unavailable there and the
+     * installer keeps the existing recipe instead.
+     */
+    public static final boolean SUPPORTS_RECIPE_REPLACE = true;
+
     private VersionAdapterImpl() {
     }
 

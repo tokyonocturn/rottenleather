@@ -203,6 +203,13 @@ public final class VersionAdapterImpl {{
      */
     public static final boolean SUPPORTS_CUSTOM_COOK_TIME = {supports_cook_time};
 
+    /**
+     * 1.8.x Forge refuses to register a smelting recipe for an input that already has one and its
+     * map does not accept removal reliably, so conflictPolicy=replace is unavailable there and the
+     * installer keeps the existing recipe instead.
+     */
+    public static final boolean SUPPORTS_RECIPE_REPLACE = {supports_replace};
+
     private VersionAdapterImpl() {{
     }}
 
@@ -441,7 +448,8 @@ def main(argv):
         stale |= write(base / "src" / "main" / "java" / "com" / "rottenleather" / "forge" / "VersionEntry.java",
                        VERSION_ENTRY.format(mc=mc), check)
         stale |= write(base / "src" / "main" / "java" / "com" / "rottenleather" / "forge" / "VersionAdapterImpl.java",
-                       ADAPTER.format(mc=mc, supports_cook_time=("false" if mc in ("1.8.8", "1.8.9") else "true"),
+                       ADAPTER.format(mc=mc, supports_cook_time=("false" if mc in ("1.8.8", "1.8.9", "1.9", "1.9.4") else "true"),
+                                      supports_replace=("false" if mc in ("1.8.8", "1.8.9") else "true"),
                                       registry=registry, empty=empty, count=count,
                                       chat_import="import %s;" % chat_class,
                                       chat_class=chat_class, chat_method=chat_method),

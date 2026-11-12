@@ -31,6 +31,10 @@ logging {
 Apply changes with `/rottenleather reload` (no restart). Changing the recipe shape also changes the
 network fingerprint reported by `/rottenleather status`.
 
+On Minecraft 1.8.x and 1.9.x the vanilla furnace only knows a 200-tick cook time, so
+`smeltTimeTicks` is ignored there; the mod logs one warning instead of silently pretending. 1.10 and
+newer apply the configured value per furnace.
+
 ### Upgrading Minecraft versions
 
 Use the jar built for that exact version. Every supported release has its own module because Forge

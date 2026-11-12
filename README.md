@@ -58,8 +58,15 @@ warning instead of stopping the server.
 
 Non-vanilla cook times are applied **per furnace**: only furnaces holding this recipe's input are
 changed, and their original timing is restored the moment the input slot changes, so other recipes
-keep vanilla 200-tick timing. On Bukkit 1.8–1.12.2 the conflict policy `replace` is not available
-(there is no per-recipe removal API); the plugin says so in the log and keeps the existing recipe.
+keep vanilla 200-tick timing.
+
+Minecraft 1.8.x and 1.9.x furnaces compare progress against a hard-coded 200 and expose no
+total-cook-time field, so `smeltTimeTicks` is ignored there (the mod logs one warning and smelts at
+vanilla speed). Custom cook time works on 1.10 and newer.
+
+`conflictPolicy=replace` needs a way to remove an existing recipe. That exists on Forge 1.9+ only;
+on Forge 1.8.x and on every Bukkit 1.8–1.12.2 server it is unavailable, and the mod says so and
+keeps the existing recipe instead of deleting it.
 
 ## Commands
 
