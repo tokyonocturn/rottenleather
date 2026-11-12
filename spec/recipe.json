@@ -1,0 +1,20 @@
+{
+  "specVersion": 1,
+  "id": "rottenleather",
+  "input": {
+    "item": "minecraft:rotten_flesh",
+    "count": 1
+  },
+  "output": {
+    "item": "minecraft:leather",
+    "count": 1
+  },
+  "experience": 0.1,
+  "smeltTimeTicks": 200,
+  "conflictPolicy": "skip",
+  "notes": [
+    "count is fixed at 1 for the input because a vanilla furnace accepts exactly one input item per cook.",
+    "smeltTimeTicks 200 is the vanilla furnace cook time; other values are applied per furnace without replacing the furnace.",
+    "conflictPolicy skip keeps another mod's or plugin's rotten-flesh smelting recipe instead of fighting over the input slot."
+  ]
+}

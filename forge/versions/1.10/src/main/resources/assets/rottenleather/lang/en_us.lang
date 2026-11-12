@@ -1,0 +1,3 @@
+itemGroup.rottenleather=Rotten Flesh to Leather
+rottenleather.command.status=Recipe status
+rottenleather.command.reload=Reload the recipe from config

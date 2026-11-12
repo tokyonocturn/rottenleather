@@ -1,0 +1,23 @@
+// Init script used once during development to locate the deobfuscated Minecraft jar that each
+// ForgeGradle 2.x version project compiles against. Run from a version project:
+//   gradle -q -I <this file> findFurnaceJar --no-daemon
+allprojects { p ->
+    p.plugins.withId('java') {
+        p.task('findFurnaceJar') {
+            doLast {
+                p.sourceSets.main.compileClasspath.files.each { f ->
+                    if (f.name.endsWith('.jar')) {
+                        def zip = new java.util.zip.ZipFile(f)
+                        try {
+                            if (zip.getEntry('net/minecraft/tileentity/TileEntityFurnace.class') != null) {
+                                println "FURNACEJAR " + f.absolutePath
+                            }
+                        } finally {
+                            zip.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

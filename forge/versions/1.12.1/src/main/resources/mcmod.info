@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "rottenleather",
+    "name": "Rotten Flesh to Leather",
+    "description": "Smelt rotten flesh into leather in a vanilla furnace. Fuel, experience, hoppers and all other furnace mechanics behave exactly as they do for a vanilla recipe.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://github.com/tokyonocturn/rottenleather",
+    "authorList": ["rottenleather"],
+    "credits": "Uses the vanilla furnace so every other mod keeps working.",
+    "logoFile": "",
+    "screenshots": [],
+    "parent": "",
+    "dependencies": []
+  }
+]

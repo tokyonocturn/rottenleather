@@ -1,0 +1,16 @@
+name: RottenFleshToLeather
+main: com.rottenleather.bukkit.RottenLeatherPlugin
+version: 1.0.0
+description: Smelt rotten flesh into leather in a vanilla furnace.
+author: rottenleather
+website: https://github.com/tokyonocturn/rottenleather
+commands:
+  rottenleather:
+    description: Show the active recipe or reload config.yml.
+    usage: /rottenleather <status|reload>
+    aliases: [rfl]
+    permission: rottenleather.admin
+permissions:
+  rottenleather.admin:
+    description: Use /rottenleather.
+    default: op

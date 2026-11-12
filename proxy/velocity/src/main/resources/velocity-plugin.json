@@ -1,0 +1,8 @@
+{
+  "id": "rottenleather",
+  "name": "Rotten Flesh to Leather",
+  "version": "1.0.0",
+  "description": "Reports and checks the rotten-flesh-to-leather recipe across backend servers.",
+  "authors": ["rottenleather"],
+  "main": "com.rottenleather.velocity.RottenLeatherVelocity"
+}

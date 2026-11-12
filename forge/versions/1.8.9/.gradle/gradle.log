@@ -1,0 +1,168 @@
+This mapping 'stable_20' was designed for MC 1.8.8! Use at your own peril.This mapping 'stable_20' was designed for MC 1.8.8! Use at your own peril.
+
+WARNING: You are using an unsupported version of ForgeGradle.
+Please consider upgrading to ForgeGradle 5 and helping in the efforts to get old versions working on the modern toolchain.
+See https://gist.github.com/TheCurle/fe7ad3ede188cbdd15c235cc75d52d4a for more info on contributing.
+#################################################
+         ForgeGradle 2.1.3-g6a7c715        
+  https://github.com/MinecraftForge/ForgeGradle  
+#################################################
+               Powered by MCP unknown               
+             http://modcoderpack.com             
+         by: Searge, ProfMobius, Fesh0r,         
+         R4wk, ZeuX, IngisKahn, bspkrs           
+#################################################
+:deobfCompileDummyTask
+:getVersionJson
+:extractUserdev
+:downloadClient SKIPPED
+:downloadServer SKIPPED
+:splitServerJar SKIPPED
+:mergeJars SKIPPED
+:applyBinaryPatches SKIPPED
+:deobfProvidedDummyTask
+:extractDependencyATs SKIPPED
+:extractMcpData SKIPPED
+:extractMcpMappings SKIPPED
+:genSrgs SKIPPED
+:deobfMcMCP SKIPPED
+:sourceApiJava
+:compileApiJava UP-TO-DATE
+:processApiResources UP-TO-DATE
+:apiClasses UP-TO-DATE
+:sourceMainJava
+:compileJava
+:processResources
+:classes
+:jar
+:sourceTestJava
+:compileTestJava UP-TO-DATE
+:processTestResources UP-TO-DATE
+:testClasses UP-TO-DATE
+:test UP-TO-DATE
+:reobfJar
+:extractRangemapReplacedMain
+C:\Users\kevin\.config\freebuff-desktop\local-projects\5db335b2-d442-4a70-8e64-a7d10f9fd562\rottenleather\forge\versions\1.8.9\build\sources\main\java
+:retromapReplacedMain
+remapping source...
+:sourceJar
+:assemble
+:check UP-TO-DATE
+:build
+:extractNatives SKIPPED
+:getAssetIndex UP-TO-DATE
+:getAssets
+:makeStart
+:sourceVerifyJava
+:compileVerifyJava
+:processVerifyResources UP-TO-DATE
+:verifyClasses
+:verifyCore
+PASS defaults.input
+PASS defaults.output
+PASS defaults.inputCount
+PASS defaults.outputCount
+PASS defaults.experience
+PASS defaults.ticks
+PASS defaults.policy
+PASS defaults.vanillaTime
+PASS defaults.summary contains input
+PASS defaults.summary contains ticks
+PASS spec.notVanillaTime
+PASS spec.sameRecipe
+PASS spec.differentTicksIsDifferent
+PASS spec.differentTime
+PASS spec.differentCount
+PASS spec.differentXp
+PASS spec.differentItem
+PASS spec.sameRecipeNull
+PASS fingerprint.matchesGenerated
+PASS fingerprint.length
+PASS fingerprint.lowercaseHex
+PASS fingerprint.canonicalHasBits
+PASS fingerprint.stable
+PASS fingerprint.changesWithCount
+PASS fingerprint.changesWithTicks
+PASS reject.inputNull
+PASS reject.inputNoNamespace
+PASS reject.inputSpace
+PASS reject.outputUpper
+PASS reject.countZero
+PASS reject.countTooBig
+PASS reject.xpNegative
+PASS reject.xpNaN
+PASS reject.xpInfinite
+PASS reject.xpTooBig
+PASS reject.ticksZero
+PASS reject.ticksTooBig
+PASS accept.boundaries.count
+PASS accept.boundaries.ticks
+PASS reject.nullPolicy
+PASS policy.skip
+PASS policy.trim
+PASS policy.replace
+PASS policy.garbage
+PASS policy.null
+PASS policy.empty
+PASS decision.absent
+PASS decision.absentFlagIrrelevant
+PASS decision.equivalent
+PASS decision.keep
+PASS decision.replace
+PASS decision.registerFlag
+PASS decision.replaceFlag
+PASS decision.keepFlag
+PASS decision.equivalentFlag
+PASS cook.vanillaNoop
+PASS cook.freshTarget
+PASS cook.shortens
+PASS cook.alreadyElapsed
+PASS cook.alreadyMatches
+PASS cook.zeroProgressLonger
+PASS cook.oneTick
+PASS cook.invalidConfig
+PASS cook.negativeProgressTolerated
+PASS tracker.adjustReturn
+PASS tracker.applied
+PASS tracker.count
+PASS tracker.secondAdjust
+PASS tracker.count2
+PASS tracker.reAdjustNoopSame
+PASS tracker.restore
+PASS tracker.restoreCount
+PASS tracker.externalChangeWins
+PASS tracker.nonMatchingNoop
+PASS tracker.nonMatchingUntouched
+PASS tracker.releaseAllRestores
+PASS tracker.releaseAllEmpty
+CORE_SUITE pass=77 fail=0
+:verifyForge
+PASS adapter.mcVersion
+PASS entry.annotation
+PASS entry.modid
+PASS entry.name
+PASS entry.version
+PASS entry.acceptedMc
+PASS entry.remoteVersions
+PASS entry.handlerParams.preInit
+PASS entry.handlerParams.serverStarting
+PASS entry.handlerParams.serverStopping
+PASS entry.handlerParams.loadComplete
+PASS entry.handlers
+PASS furnace.cookTimeType
+PASS furnace.totalCookTimeType
+PASS furnace.cookTimePrivate
+PASS furnace.totalCookTimePrivate
+PASS world.loadedTileEntityListPublic
+PASS recipes.smeltingList
+PASS recipes.experience
+PASS registry.addSmelting
+PASS item.byNameOrId
+PASS reflection.get
+PASS reflection.set
+PASS controller.subscribeEvents
+FORGE_SUITE mc=1.8.9 pass=24 fail=0
+
+BUILD SUCCESSFUL
+
+Total time: 14.138 secs

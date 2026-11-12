@@ -1,0 +1,74 @@
+buildscript {
+    repositories {
+        maven { url = "https://maven.minecraftforge.net/" }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+    }
+}
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = "1.0.0"
+group = "com.rottenleather"
+archivesBaseName = "rottenleather-1.11.2"
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    version = "1.11.2-13.20.1.2588"
+    runDir = "run"
+    mappings = "stable_32"
+}
+
+// The adapter, @Mod entry and command adapter live here; recipe, config and cook-time behaviour are
+// shared by every release and by the platform-independent core suite.
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java', '../../../shared/src/main/java', '../../shared/src/main/java']
+    }
+    verify {
+        java.srcDirs = ['../../../shared/src/test/java', '../../verify/java']
+    }
+}
+sourceSets.verify.compileClasspath = sourceSets.main.compileClasspath + sourceSets.main.output
+sourceSets.verify.runtimeClasspath = sourceSets.main.runtimeClasspath + sourceSets.main.output + sourceSets.verify.output
+verifyClasses.dependsOn 'classes'
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': project.minecraft.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+task verifyCore(type: JavaExec, dependsOn: 'verifyClasses') {
+    main = 'com.rottenleather.test.CoreSuite'
+    classpath = sourceSets.verify.runtimeClasspath
+}
+
+task verifyForge(type: JavaExec, dependsOn: 'verifyClasses') {
+    main = 'com.rottenleather.test.ForgeSuite'
+    classpath = sourceSets.verify.runtimeClasspath
+    systemProperty 'rottenleather.mc', '1.11.2'
+}
+
+jar {
+    manifest {
+        attributes(
+            'Mod-Version': project.version,
+            'Implementation-Title': 'Rotten Flesh to Leather',
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'rottenleather'
+        )
+    }
+}

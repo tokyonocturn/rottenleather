@@ -1,0 +1,23 @@
+# Generated from spec/recipe.json by tools/generate.py. Do not edit this copy by hand:
+# run tools/generate.py after changing the spec, then rebuild the plugin.
+#
+# Every value below is validated at startup. An unreadable, missing or invalid config falls back to
+# these defaults and logs a warning, so a bad edit cannot stop a server from starting.
+recipe:
+  # Namespaced item id of the furnace input. Must smelt one item per cook in a vanilla furnace.
+  input-item: minecraft:rotten_flesh
+  # Namespaced item id of the furnace output.
+  output-item: minecraft:leather
+  # How many output items one smelt produces (1-64).
+  output-count: 1
+  # Experience granted per smelt (0-100).
+  experience: 0.1
+  # Furnace cook time in ticks (20 ticks = 1 second). 200 is vanilla.
+  smelt-time-ticks: 200
+  # skip: keep another plugin's/plugin-provided recipe for the same input.
+  # replace: take the input slot over.
+  conflict-policy: skip
+
+logging:
+  # Log the registered recipe and any conflict decision once, on enable.
+  log-registration: true
