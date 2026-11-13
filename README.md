@@ -15,20 +15,27 @@ minecraft:rotten_flesh x1 --furnace--> minecraft:leather x1
 
 | Platform | File | Minecraft |
 | --- | --- | --- |
-| Forge | `rottenleather-<mcversion>-1.0.1.jar` | one jar per supported 1.8–1.12.2 release |
-| Bukkit / Spigot / Paper | `rottenleather-bukkit-1.0.1.jar` | 1.8.8–1.12.2 (see the matrix) |
-| BungeeCord / Waterfall | `rottenleather-bungee-1.0.1.jar` | proxy module, any modern BungeeCord/Waterfall |
-| Velocity | `rottenleather-velocity-1.0.1.jar` | Velocity 3.x |
+| Forge | `rottenleather-<mcversion>-1.0.2.jar` | one jar per supported 1.8–1.12.2 release |
+| Bukkit / Spigot / Paper | `rottenleather-bukkit-1.0.2.jar` | 1.8.8–1.12.2 (see the matrix) |
+| BungeeCord / Waterfall | `rottenleather-bungee-1.0.2.jar` | proxy module, any modern BungeeCord/Waterfall |
+| Velocity | `rottenleather-velocity-1.0.2.jar` | Velocity 3.x |
 
 See [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the exact versions and how each one was
 verified. Versions that were not tested are not listed as supported.
+
+The Bukkit plugin is verified on **Paper 1.8.8, 1.9.4, 1.10.2, 1.11.2, 1.12 and 1.12.2** and on
+**Spigot 1.8.8, 1.9, 1.12 and 1.12.2**, each with its own fresh server boot per scenario. Spigot
+servers were built locally from SpigotMC's BuildTools and every Spigot probe asserts the server
+reports itself as CraftBukkit/Spigot at that exact Minecraft version before any check runs. Spigot
+1.8.9, 1.9.4, 1.10, 1.10.2, 1.11, 1.11.2 and 1.12.1 could not be built in this environment; the
+concrete reason for each is recorded in the matrix.
 
 ## Install
 
 **Forge (single player or server):** put the jar matching your Minecraft version in `mods/`.
 Nothing else is required; the recipe is registered on load.
 
-**Bukkit / Spigot / Paper:** drop `rottenleather-bukkit-1.0.1.jar` in `plugins/`.
+**Bukkit / Spigot / Paper:** drop `rottenleather-bukkit-1.0.2.jar` in `plugins/`.
 
 **BungeeCord / Waterfall / Velocity:** drop the matching proxy jar in `plugins/`. The proxy has no
 world and therefore no furnace — see [`docs/PROXIES.md`](docs/PROXIES.md) for what the module does

@@ -23,7 +23,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export JAVA_HOME="${JAVA_HOME:-/c/Program Files/Java/jdk1.8.0_503}"
 JAVA="$JAVA_HOME/bin/java.exe"
 DIR="$ROOT/runtime/$mc/server"
-JAR="$ROOT/dist/rottenleather-$mc-1.0.1.jar"
+JAR="$ROOT/dist/rottenleather-$mc-1.0.2.jar"
 LOG="$ROOT/logs/probe-forge-$mc-$scenario.log"
 OUT="$ROOT/logs/probe-forge-$mc"
 PROBE_TAG="$mc/$scenario"
@@ -41,6 +41,10 @@ cleanup() {
     done
     kill "$BOOT_PID" 2>/dev/null || true
     wait "$BOOT_PID" 2>/dev/null || true
+    if kill -0 "$BOOT_PID" 2>/dev/null; then
+        # A Windows JVM can ignore the polite signal; a surviving server poisons the next scenario.
+        taskkill //PID "$BOOT_PID" //T //F > /dev/null 2>&1 || true
+    fi
 }
 trap cleanup EXIT
 trap 'cleanup; exit 130' INT TERM
@@ -119,7 +123,9 @@ case "$scenario" in
 esac
 
 : > "$DIR/console.probe.log"
-( cd "$DIR" && "$JAVA" -Xmx1200M -jar "forge-$forge-universal.jar" nogui > console.probe.log 2>&1 ) &
+# exec so BOOT_PID is the java process itself; killing a subshell would orphan the server and leave
+# the next scenario fighting a stale world and ports.
+( cd "$DIR" && exec "$JAVA" -Xmx1200M -jar "forge-$forge-universal.jar" nogui > console.probe.log 2>&1 ) &
 BOOT_PID=$!
 for i in $(seq 1 240); do
     grep -q 'Done (' "$DIR/console.probe.log" 2>/dev/null && break

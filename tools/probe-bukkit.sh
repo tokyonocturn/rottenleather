@@ -10,15 +10,18 @@ set -uo pipefail
 mc="$1"
 scenario="$2"
 
+# SERVER_KIND=paper (default) runs the Paper jars used by the original sweep;
+# SERVER_KIND=spigot SERVER_JAR=<spigot-<mc>.jar> runs a genuine Spigot server built by BuildTools.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+KIND="${SERVER_KIND:-bukkit}"
 export JAVA_HOME="${JAVA_HOME:-/c/Program Files/Java/jdk1.8.0_503}"
 JAVA="$JAVA_HOME/bin/java.exe"
-DIR="$ROOT/runtime/bukkit-$mc/server"
-JAR="$ROOT/dist/rottenleather-bukkit-1.0.1.jar"
-PAPER="$ROOT/../livedaw-mc/automation/jars/paper-$mc.jar"
-LOG="$ROOT/logs/probe-bukkit-$mc-$scenario.log"
-OUT="$ROOT/logs/probe-bukkit-$mc"
-PROBE_TAG="bukkit-$mc/$scenario"
+DIR="$ROOT/runtime/$KIND-$mc/server"
+JAR="${JAR:-$(ls -1 "$ROOT"/dist/rottenleather-bukkit-*.jar 2>/dev/null | sort -V | tail -1)}"
+PAPER="${SERVER_JAR:-$ROOT/../livedaw-mc/automation/jars/paper-$mc.jar}"
+LOG="$ROOT/logs/probe-$KIND-$mc-$scenario.log"
+OUT="$ROOT/logs/probe-$KIND-$mc"
+PROBE_TAG="$KIND-$mc/$scenario"
 mkdir -p "$OUT" "$ROOT/logs"
 : > "$LOG"
 . "$ROOT/tools/probe-lib.sh"
@@ -33,6 +36,10 @@ cleanup() {
     done
     kill "$BOOT_PID" 2>/dev/null || true
     wait "$BOOT_PID" 2>/dev/null || true
+    if kill -0 "$BOOT_PID" 2>/dev/null; then
+        # A Windows JVM can ignore the polite signal; a surviving server poisons the next scenario.
+        taskkill //PID "$BOOT_PID" //T //F > /dev/null 2>&1 || true
+    fi
 }
 trap cleanup EXIT
 trap 'cleanup; exit 130' INT TERM
@@ -110,7 +117,9 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
 done
 [ "$installed" = yes ] || fail "could not install $JAR into $DIR/plugins (stale server holding the file?)"
 : > "$DIR/console.probe.log"
-( cd "$DIR" && "$JAVA" -Xmx1200M -Xms512M -jar server.jar nogui > console.probe.log 2>&1 ) &
+# exec so BOOT_PID is the java process itself; killing a subshell would orphan the server and
+# leave the next scenario fighting a stale world and ports.
+( cd "$DIR" && exec "$JAVA" -Xmx1200M -Xms512M -jar server.jar nogui > console.probe.log 2>&1 ) &
 BOOT_PID=$!
 for i in $(seq 1 300); do
     if grep -q 'Done (' "$DIR/console.probe.log" 2>/dev/null; then
@@ -123,6 +132,17 @@ for i in $(seq 1 300); do
 done
 grep -q 'Done (' "$DIR/console.probe.log" || fail "server did not reach Done"
 say "boot reached Done (game $PROBE_PORT, rcon $PROBE_RPORT)"
+if [ "$KIND" = "spigot" ]; then
+    # Prove the boot is a genuine Spigot server at this exact Minecraft version: a Paper or
+    # Bukkit-API-only jar must never be reported as a Spigot pass.
+    rcon "version" > "$OUT/version-$scenario.txt" 2>&1
+    grep -q "This server is running CraftBukkit version" "$OUT/version-$scenario.txt"         || { cat "$OUT/version-$scenario.txt"; fail "server did not answer /version like a CraftBukkit/Spigot server"; }
+    grep -qi "Spigot" "$OUT/version-$scenario.txt"         || { cat "$OUT/version-$scenario.txt"; fail "server does not report itself as Spigot"; }
+    grep -qi "Paper" "$OUT/version-$scenario.txt" && { cat "$OUT/version-$scenario.txt"; fail "server reports itself as Paper, not Spigot"; }
+    grep -q "MC: $mc)" "$OUT/version-$scenario.txt"         || { cat "$OUT/version-$scenario.txt"; fail "server does not report Minecraft $mc"; }
+    say "brand: $(grep -m1 'running CraftBukkit' "$OUT/version-$scenario.txt" | tr -d '
+')"
+fi
 rcon "setworldspawn 2 4 2" > /dev/null
 wait_world_ready 90 || fail "the world never accepted block edits"
 
@@ -191,4 +211,4 @@ if ! grep -q 'customCookTime=false' "$OUT/status-$scenario.txt"; then
     grep -q 'cook-time API not available' "$OUT/console-$scenario.log" && fail "NMS cook-time bridge unavailable"
 fi
 
-say "PASS bukkit-$mc $scenario"
+say "PASS $KIND-$mc $scenario"

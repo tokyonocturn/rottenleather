@@ -32,7 +32,7 @@ Verified here: 1.8.8, 1.8.9, 1.9, 1.9.4, 1.10, 1.10.2, 1.11, 1.11.2, 1.12, 1.12.
 
 ## Bukkit / Spigot / Paper
 
-One jar, `rottenleather-bukkit-1.0.1.jar`, compiled against the Spigot 1.8.8 API, resolves the running
+One jar, `rottenleather-bukkit-1.0.2.jar`, compiled against the Spigot 1.8.8 API, resolves the running
 CraftBukkit package at enable time.
 
 | Server | runtime scenarios (fresh boot each) | support |
@@ -43,20 +43,38 @@ CraftBukkit package at enable time.
 | Paper 1.11.2 | pass: default, custom, vanilla, reload, skip | **verified** |
 | Paper 1.12 | pass: default, custom, vanilla, reload, skip | **verified** |
 | Paper 1.12.2 | pass: default, custom, vanilla, reload, skip | **verified** |
-| Spigot (any) | not run | **not claimed** — no Spigot jars were available; Paper passes are not reported as Spigot passes |
 
 Verified here: 1.8.8, 1.9.4, 1.10.2, 1.11.2, 1.12, 1.12.2
 
-Spigot itself is **not claimed**: only Paper jars were available for the runtime sweep, and a Paper
-pass is not a Spigot pass even though both expose the same Bukkit API and CraftBukkit package layout.
+### Spigot
+
+Genuine Spigot server jars built locally with SpigotMC's BuildTools; each probe boot asserts that
+`/version` reports CraftBukkit with a Spigot build tag at the exact Minecraft version before any
+scenario runs, so a Paper or Bukkit-API-only jar can never appear here. A Paper pass is never
+reported as a Spigot pass.
+
+| Server | runtime scenarios (fresh boot each) | support |
+| --- | --- | --- |
+| Spigot 1.8.8 | pass: default, custom, vanilla, reload, skip | **verified** |
+| Spigot 1.9 | pass: default, custom, vanilla, reload, skip | **verified** |
+| Spigot 1.12 | pass: default, custom, vanilla, reload, skip | **verified** |
+| Spigot 1.12.2 | pass: default, custom, vanilla, reload, skip | **verified** |
+
+Verified here: 1.8.8, 1.9, 1.12, 1.12.2
+
+Spigot versions that are absent from this table were not built here and stay unclaimed: 1.8.9 has no
+BuildTools version manifest (HTTP 404), 1.9.4/1.10.2/1.11.2/1.12.1 depend on the purged
+`net.md-5:bungeecord-chat` snapshot that no public Maven group still serves, and 1.10/1.11 stop at
+BuildTools' empty git-committer identity on this host before a jar exists. See
+[`TESTING.md`](TESTING.md) for the per-version detail.
 
 ## Proxies
 
 | Platform | Artifact | Status |
 | --- | --- | --- |
-| BungeeCord | `rottenleather-bungee-1.0.1.jar` | loads and enables (probe log) |
+| BungeeCord | `rottenleather-bungee-1.0.2.jar` | loads and enables (probe log) |
 | Waterfall | same jar as BungeeCord | same BungeeCord plugin API; not separately booted |
-| Velocity | `rottenleather-velocity-1.0.1.jar` | loads and enables (probe log) |
+| Velocity | `rottenleather-velocity-1.0.2.jar` | loads and enables (probe log) |
 
 Proxies have no world: the modules report the recipe fingerprint between server and proxy and warn on
 a mismatch. They never implement furnace behaviour. The reporting path needs a connected player and is

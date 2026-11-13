@@ -6,7 +6,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-JDK="/c/Program Files/Java/jdk-21.0.12"
+# newest installed JDK 21 (the path changes when the JDK is updated)
+JDK="$(ls -d "/c/Program Files/Java"/jdk-21* 2>/dev/null | sort -V | tail -1)"
 JAVA="$JDK/bin/java.exe"
 LOG="$ROOT/logs/probe-proxies.log"
 mkdir -p "$ROOT/logs"
@@ -19,7 +20,7 @@ B="$ROOT/runtime/proxy-bungee"
 rm -rf "$B"
 mkdir -p "$B/plugins"
 cp -f "$ROOT/libs/proxy/BungeeCord.jar" "$B/BungeeCord.jar"
-cp -f "$ROOT/dist/rottenleather-bungee-1.0.1.jar" "$B/plugins/"
+cp -f "$ROOT/dist/rottenleather-bungee-1.0.2.jar" "$B/plugins/"
 cat > "$B/config.yml" <<'EOF'
 online_mode: false
 ip_forward: false
@@ -62,7 +63,7 @@ V="$ROOT/runtime/proxy-velocity"
 rm -rf "$V"
 mkdir -p "$V/plugins"
 cp -f "$ROOT/libs/proxy/velocity.jar" "$V/velocity.jar"
-cp -f "$ROOT/dist/rottenleather-velocity-1.0.1.jar" "$V/plugins/"
+cp -f "$ROOT/dist/rottenleather-velocity-1.0.2.jar" "$V/plugins/"
 cat > "$V/velocity.toml" <<'EOF'
 config-version = "2.8"
 bind = "127.0.0.1:25778"

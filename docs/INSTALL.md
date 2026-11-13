@@ -3,7 +3,7 @@
 ## Forge (1.8–1.12.2)
 
 1. Install the Forge version that matches your Minecraft release.
-2. Put `rottenleather-<mcversion>-1.0.1.jar` into `.minecraft/mods/` (client) or the server's `mods/`.
+2. Put `rottenleather-<mcversion>-1.0.2.jar` into `.minecraft/mods/` (client) or the server's `mods/`.
 3. Start the game or server once. `config/rottenleather.cfg` is created on first launch.
 
 The jar is a normal Forge mod: it works in single player, on a LAN world and on a dedicated server,
@@ -43,7 +43,7 @@ changed its item registry, `ItemStack` count API and chat component between 1.8 
 
 ## Bukkit / Spigot / Paper (1.8.8–1.12.2)
 
-1. Put `rottenleather-bukkit-1.0.1.jar` into `plugins/`.
+1. Put `rottenleather-bukkit-1.0.2.jar` into `plugins/`.
 2. Start the server. `plugins/RottenFleshToLeather/config.yml` is created on first enable.
 3. Check the result with `/rottenleather status` (alias `/rfl`); `/rottenleather reload` re-reads
    the config.
@@ -73,10 +73,13 @@ Notes specific to the Bukkit family:
 * Bukkit 1.8.x and 1.9.x servers compare furnace progress against a hard-coded 200 ticks, so
   `smelt-time-ticks` is ignored there (the plugin logs one warning); 1.10.2 and newer apply it.
 * The command needs `rottenleather.admin` (default op).
+* Spigot behaves exactly like Paper here: the same jar was verified on Spigot 1.8.8, 1.9, 1.12 and
+  1.12.2 with real BuildTools server jars, and on Paper 1.8.8-1.12.2. Older Spigot releases are not
+  claimed because their server jars could not be built in this environment (see the matrix).
 
 ## BungeeCord / Waterfall
 
-Put `rottenleather-bungee-1.0.1.jar` into the proxy's `plugins/` directory. The module has no
+Put `rottenleather-bungee-1.0.2.jar` into the proxy's `plugins/` directory. The module has no
 configuration file. It registers the `rottenleather:hello` channel and the `/rflnet` command.
 
 A proxy does not tick worlds and cannot smelt, so this module never fakes furnace behaviour. It
@@ -86,7 +89,7 @@ the reports in `/rflnet`. Install the Bukkit plugin on backends to get reports; 
 
 ## Velocity
 
-Put `rottenleather-velocity-1.0.1.jar` into Velocity's `plugins/` directory. Velocity 3.x on Java 11
+Put `rottenleather-velocity-1.0.2.jar` into Velocity's `plugins/` directory. Velocity 3.x on Java 11
 or newer is required (the module is compiled for Java 11). It registers the same channel and
 `/rflnet` command.
 

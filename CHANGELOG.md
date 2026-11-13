@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.2
+
+Spigot coverage release. Spigot is an explicitly supported platform, so it is now verified on real
+Spigot servers instead of being inferred from Paper.
+
+* Genuine Spigot server jars are built locally with SpigotMC's BuildTools and tested with the same
+  five scenarios as Paper: **Spigot 1.8.8, 1.9, 1.12 and 1.12.2** all pass default, custom, vanilla,
+  reload and skip. Every boot asserts `/version` reports CraftBukkit with a Spigot build tag at that
+  exact Minecraft version, so a Paper or API-only jar can never be recorded as a Spigot pass.
+* No plugin defect was exposed by the Spigot runs: recipe registration, the experience bridge
+  (`nmsXp`), cook-time capability, fuel, slot emptying, hopper automation and reload behave exactly
+  as they do on Paper (cook time is applied where the server allows it, and 1.8/1.9 log the
+  documented warning).
+* Spigot 1.8.9, 1.9.4, 1.10, 1.10.2, 1.11, 1.11.2 and 1.12.1 remain unclaimed, each with a recorded
+  reason: no BuildTools manifest for 1.8.9, purged `bungeecord-chat` snapshots for 1.9.4/1.10.2/
+  1.11.2/1.12.1, and BuildTools' empty committer identity on this Windows host for 1.10/1.11.
+  `tools/build-spigot.sh` and `tools/probe-spigot.sh` make all of this reproducible.
+* `tools/install-legacy-chat.py` restores the still-published `net.md-5` snapshot artifacts from
+  SpigotMC's/PaperMC's public Maven groups so 1.9 and 1.12 can be compiled from genuine sources.
+
 ## 1.0.1
 
 Verification and correctness release. Every supported cell in

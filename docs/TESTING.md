@@ -84,11 +84,37 @@ installed into `plugins/` with the same byte-for-byte verification. `replace` is
 the 1.8–1.12.2 Bukkit API cannot remove a recipe; the plugin logs that limitation instead of
 pretending to support it.
 
-## 5. Whole matrix
+## 5. Spigot runtime probe
+
+Spigot has no downloadable server jar: SpigotMC only distributes BuildTools, which compiles the
+server from the SpigotMC repositories. `tools/build-spigot.sh` drives it with the JDK 8 toolchain and
+writes `runtime/spigot/spigot-<mc>.jar`; `tools/probe-spigot.sh` then runs the same five scenarios as
+the Paper probe against that jar.
 
 ```bash
-bash tools/run-matrix.sh forge    # 11 versions x 6 scenarios
-bash tools/run-matrix.sh bukkit   # 6 Paper versions x 5 scenarios
+bash tools/build-spigot.sh 1.8.8 1.9 1.12 1.12.2
+bash tools/probe-spigot.sh 1.8.8 default
+```
+
+Before any scenario assertion the probe asks the server `/version` and requires the reply to say
+"This server is running CraftBukkit version ... Spigot ... (MC: <mc>)". A Paper or API-only jar can
+therefore never be recorded as a Spigot pass; the raw reply is stored as
+`logs/probe-spigot-<mc>/version-<scenario>.txt`.
+
+Spigot versions that could not be built here, and why:
+
+| Version | Blocking reason |
+| --- | --- |
+| 1.8.9 | BuildTools has no version manifest for 1.8.9 (`https://hub.spigotmc.org/versions/1.8.9.json` answers 404), so SpigotMC never published a buildable 1.8.9 revision. |
+| 1.9.4, 1.10.2, 1.11.2, 1.12.1 | Those revisions declare `net.md-5:bungeecord-chat:<version>-SNAPSHOT`; the artifact is gone from Sonatype and is not served by SpigotMC's or PaperMC's public Maven groups either (HTTP 404), so `spigot-api` cannot resolve and no genuine jar can be produced. |
+| 1.10, 1.11 | The dependency artifacts exist and BuildTools reaches the patching stage, but on this Windows host BuildTools exports an empty `GIT_COMMITTER_NAME`/`EMAIL` to `applyPatches.sh`, so `git am` aborts with `empty ident name ... not allowed`. Not a plugin defect; no server jar was produced, so those versions stay unverified. |
+
+## 6. Whole matrix
+
+```bash
+bash tools/run-matrix.sh forge     # 11 versions x 6 scenarios
+bash tools/run-matrix.sh bukkit    # 6 Paper versions x 5 scenarios
+bash tools/run-matrix.sh spigot    # every Spigot jar that exists in runtime/spigot
 bash tools/run-matrix.sh all
 ```
 

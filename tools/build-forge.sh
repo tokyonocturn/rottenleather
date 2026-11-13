@@ -59,7 +59,7 @@ for mc in $ORDER; do
   fi
   if ( cd "$ROOT/forge/versions/$mc" && "$gb" build verifyCore verifyForge --no-daemon ) \
       > "$LOG/forge-$mc.log" 2>&1; then
-    jar="$ROOT/forge/versions/$mc/build/libs/rottenleather-$mc-1.0.1.jar"
+    jar="$ROOT/forge/versions/$mc/build/libs/rottenleather-$mc-1.0.2.jar"
     core="$(grep -o 'CORE_SUITE pass=[0-9]* fail=[0-9]*' "$LOG/forge-$mc.log" | tail -1)"
     forge="$(grep -o 'FORGE_SUITE mc=[0-9.]* pass=[0-9]* fail=[0-9]*' "$LOG/forge-$mc.log" | tail -1)"
     if [ ! -f "$jar" ]; then

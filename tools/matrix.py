@@ -107,9 +107,25 @@ def bukkit_table(results):
         if ok:
             verified.append(mc)
         rows.append("| Paper %s | %s | %s |" % (mc, cell, "**verified**" if ok else "not verified"))
-    rows.append("| Spigot (any) | not run | **not claimed** — no Spigot jars were available; Paper passes "
-                "are not reported as Spigot passes |")
     return "\n".join(rows), verified
+
+
+def spigot_table(results):
+    versions = sorted({mc for (platform, mc) in results if platform == "spigot"},
+                      key=lambda v: [int(p) for p in v.split(".")])
+    rows = ["| Server | runtime scenarios (fresh boot each) | support |",
+            "| --- | --- | --- |"]
+    verified = []
+    for mc in versions:
+        runs = results[("spigot", mc)]
+        cell = scenarios_cell(runs, BUKKIT_SCENARIOS)
+        ok = all(runs.get(s) == "PASS" for s in BUKKIT_SCENARIOS)
+        if ok:
+            verified.append(mc)
+        rows.append("| Spigot %s | %s | %s |" % (mc, cell, "**verified**" if ok else "not verified"))
+    if not versions:
+        rows.append("| Spigot (any) | no probe run | **not claimed** |")
+    return chr(10).join(rows), verified
 
 
 def proxy_status():
@@ -124,6 +140,7 @@ def main():
     build_results = builds()
     forge_rows, forge_verified = forge_table(results, build_results)
     bukkit_rows, bukkit_verified = bukkit_table(results)
+    spigot_rows, spigot_verified = spigot_table(results)
     bungee, velocity = proxy_status()
 
     def mark(flag):
@@ -151,23 +168,37 @@ Verified here: {forge_verified}
 
 ## Bukkit / Spigot / Paper
 
-One jar, `rottenleather-bukkit-1.0.1.jar`, compiled against the Spigot 1.8.8 API, resolves the running
+One jar, `rottenleather-bukkit-1.0.2.jar`, compiled against the Spigot 1.8.8 API, resolves the running
 CraftBukkit package at enable time.
 
 {bukkit_rows}
 
 Verified here: {bukkit_verified}
 
-Spigot itself is **not claimed**: only Paper jars were available for the runtime sweep, and a Paper
-pass is not a Spigot pass even though both expose the same Bukkit API and CraftBukkit package layout.
+### Spigot
+
+Genuine Spigot server jars built locally with SpigotMC's BuildTools; each probe boot asserts that
+`/version` reports CraftBukkit with a Spigot build tag at the exact Minecraft version before any
+scenario runs, so a Paper or Bukkit-API-only jar can never appear here. A Paper pass is never
+reported as a Spigot pass.
+
+{spigot_rows}
+
+Verified here: {spigot_verified}
+
+Spigot versions that are absent from this table were not built here and stay unclaimed: 1.8.9 has no
+BuildTools version manifest (HTTP 404), 1.9.4/1.10.2/1.11.2/1.12.1 depend on the purged
+`net.md-5:bungeecord-chat` snapshot that no public Maven group still serves, and 1.10/1.11 stop at
+BuildTools' empty git-committer identity on this host before a jar exists. See
+[`TESTING.md`](TESTING.md) for the per-version detail.
 
 ## Proxies
 
 | Platform | Artifact | Status |
 | --- | --- | --- |
-| BungeeCord | `rottenleather-bungee-1.0.1.jar` | {bungee} |
+| BungeeCord | `rottenleather-bungee-1.0.2.jar` | {bungee} |
 | Waterfall | same jar as BungeeCord | same BungeeCord plugin API; not separately booted |
-| Velocity | `rottenleather-velocity-1.0.1.jar` | {velocity} |
+| Velocity | `rottenleather-velocity-1.0.2.jar` | {velocity} |
 
 Proxies have no world: the modules report the recipe fingerprint between server and proxy and warn on
 a mismatch. They never implement furnace behaviour. The reporting path needs a connected player and is
@@ -197,7 +228,8 @@ not covered by the automated probe. Details: [`PROXIES.md`](PROXIES.md).
 | `conflictPolicy=skip` | yes (probed) | yes (probed) |
 | live reload | Forge: re-registers the recipe, so input, output, count, XP and cook time all change (probed). Bukkit: applies XP and cook time only — the 1.8–1.12.2 API cannot re-register a recipe, so a count change needs a restart (probed) | same split: Forge 1.9–1.12.2 reload everything, Bukkit reloads XP and cook time |
 | `conflictPolicy=replace` | **no on Forge 1.8.x** — a warning is logged and the existing recipe is kept (asserted by the `replace` scenario) | Forge: yes (probed). Bukkit/Paper: no — the 1.8–1.12.2 API cannot remove a recipe, and the plugin logs that |
-""".format(forge_rows=forge_rows, bukkit_rows=bukkit_rows,
+""".format(forge_rows=forge_rows, bukkit_rows=bukkit_rows, spigot_rows=spigot_rows,
+           spigot_verified=", ".join(spigot_verified) if spigot_verified else "nothing yet",
            forge_verified=", ".join(forge_verified) if forge_verified else "nothing yet",
            bukkit_verified=", ".join(bukkit_verified) if bukkit_verified else "nothing yet",
            bungee=mark(bungee), velocity=mark(velocity))

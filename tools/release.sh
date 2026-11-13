@@ -3,7 +3,7 @@
 # Requires an authenticated gh CLI and a repository remote. Run tools/build-all.sh first.
 set -euo pipefail
 
-VERSION="1.0.1"
+VERSION="1.0.2"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 

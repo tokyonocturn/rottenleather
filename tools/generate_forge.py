@@ -37,7 +37,7 @@ BUILD_GRADLE = """buildscript {{
 }}
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.0.1"
+version = "1.0.2"
 group = "com.rottenleather"
 archivesBaseName = "rottenleather-{mc}"
 

@@ -1,5 +1,5 @@
 name: RottenFleshToLeather
 main: com.rottenleather.bungee.RottenLeatherBungee
-version: 1.0.0
+version: 1.0.2
 author: rottenleather
 description: Reports and checks the rotten-flesh-to-leather recipe across backend servers.
